@@ -1,6 +1,6 @@
 package core
 
-import "github.com/ink0rr/rockide/internal/protocol"
+import "github.com/rockide/language-server/internal/protocol"
 
 type Project struct {
 	BP string

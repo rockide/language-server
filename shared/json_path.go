@@ -3,7 +3,7 @@ package shared
 import (
 	"fmt"
 
-	"github.com/ink0rr/rockide/internal/jsonc"
+	"github.com/rockide/language-server/internal/jsonc"
 )
 
 type JsonPath struct {

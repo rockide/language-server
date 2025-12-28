@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/ink0rr/rockide/core"
-	"github.com/ink0rr/rockide/handlers"
-	"github.com/ink0rr/rockide/internal/protocol"
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/handlers"
+	"github.com/rockide/language-server/internal/protocol"
 )
 
 func findProjectPaths(params any) (*core.Project, error) {

@@ -3,11 +3,11 @@ package handlers
 import (
 	"slices"
 
-	"github.com/ink0rr/rockide/core"
-	"github.com/ink0rr/rockide/internal/jsonc"
-	"github.com/ink0rr/rockide/internal/sliceutil"
-	"github.com/ink0rr/rockide/shared"
-	"github.com/ink0rr/rockide/stores"
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/internal/jsonc"
+	"github.com/rockide/language-server/internal/sliceutil"
+	"github.com/rockide/language-server/shared"
+	"github.com/rockide/language-server/stores"
 )
 
 var Entity = &JsonHandler{

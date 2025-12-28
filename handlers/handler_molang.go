@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/ink0rr/rockide/internal/molang"
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/internal/protocol/semtok"
-	"github.com/ink0rr/rockide/internal/sliceutil"
-	"github.com/ink0rr/rockide/internal/textdocument"
+	"github.com/rockide/language-server/internal/molang"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/sliceutil"
+	"github.com/rockide/language-server/internal/textdocument"
 )
 
 type MolangHandler struct{}

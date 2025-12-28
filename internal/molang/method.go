@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ink0rr/rockide/internal/sliceutil"
+	"github.com/rockide/language-server/internal/sliceutil"
 )
 
 type Method struct {

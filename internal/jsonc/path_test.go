@@ -3,7 +3,7 @@ package jsonc_test
 import (
 	"testing"
 
-	"github.com/ink0rr/rockide/internal/jsonc"
+	"github.com/rockide/language-server/internal/jsonc"
 )
 
 func assertPath(t *testing.T, path jsonc.Path, pattern jsonc.Path, shouldMatch bool) {

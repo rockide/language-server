@@ -3,8 +3,8 @@ package shared
 import (
 	"os"
 
-	"github.com/ink0rr/rockide/core"
-	"github.com/ink0rr/rockide/internal/sliceutil"
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/internal/sliceutil"
 )
 
 var wd string

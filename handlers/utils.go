@@ -3,9 +3,9 @@ package handlers
 import (
 	"github.com/bmatcuk/doublestar/v4"
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/ink0rr/rockide/core"
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/shared"
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/shared"
 )
 
 func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core.Symbol {

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ink0rr/rockide/internal/protocol/pathutil"
+	"github.com/rockide/language-server/internal/protocol/pathutil"
 )
 
 // A DocumentURI is the URI of a client editor document.

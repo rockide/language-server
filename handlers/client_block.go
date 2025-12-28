@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"github.com/ink0rr/rockide/core"
-	"github.com/ink0rr/rockide/shared"
-	"github.com/ink0rr/rockide/stores"
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/shared"
+	"github.com/rockide/language-server/stores"
 )
 
 var ClientBlock = &JsonHandler{

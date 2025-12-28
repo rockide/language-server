@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/ink0rr/rockide/internal/debouncer"
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/internal/textdocument"
+	"github.com/rockide/language-server/internal/debouncer"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/internal/textdocument"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

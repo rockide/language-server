@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ink0rr/rockide/internal/molang"
+	"github.com/rockide/language-server/internal/molang"
 )
 
 func assertTokens(t *testing.T, input string, expected []molang.Token) {

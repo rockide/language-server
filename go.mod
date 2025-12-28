@@ -1,4 +1,4 @@
-module github.com/ink0rr/rockide
+module github.com/rockide/language-server
 
 go 1.24.0
 

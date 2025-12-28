@@ -13,7 +13,7 @@ package protocol
 import (
 	"encoding/json"
 
-	"github.com/ink0rr/rockide/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/protocol/semtok"
 )
 
 // A special text edit with an additional change annotation.
@@ -223,16 +223,18 @@ type ChangeAnnotation struct {
 // An identifier to refer to a change annotation stored with a workspace edit.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#changeAnnotationIdentifier
-type ChangeAnnotationIdentifier = string // (alias)
-// @since 3.18.0
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#changeAnnotationsSupportOptions
-type ChangeAnnotationsSupportOptions struct {
-	// Whether the client groups edits with equal labels into tree nodes,
-	// for instance all edits labelled with "Changes in Strings" would
-	// be a tree node.
-	GroupsOnLabel bool `json:"groupsOnLabel,omitempty"`
-}
+type (
+	ChangeAnnotationIdentifier = string // (alias)
+	// @since 3.18.0
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#changeAnnotationsSupportOptions
+	ChangeAnnotationsSupportOptions struct {
+		// Whether the client groups edits with equal labels into tree nodes,
+		// for instance all edits labelled with "Changes in Strings" would
+		// be a tree node.
+		GroupsOnLabel bool `json:"groupsOnLabel,omitempty"`
+	}
+)
 
 // Defines the capabilities provided by the client.
 //
@@ -1277,18 +1279,20 @@ type CreateFilesParams struct {
 // The declaration of a symbol representation as one or many {@link Location locations}.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#declaration
-type Declaration = []Location // (alias)
-// @since 3.14.0
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#declarationClientCapabilities
-type DeclarationClientCapabilities struct {
-	// Whether declaration supports dynamic registration. If this is set to `true`
-	// the client supports the new `DeclarationRegistrationOptions` return value
-	// for the corresponding server capability as well.
-	DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
-	// The client supports additional metadata in the form of declaration links.
-	LinkSupport bool `json:"linkSupport,omitempty"`
-}
+type (
+	Declaration = []Location // (alias)
+	// @since 3.14.0
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#declarationClientCapabilities
+	DeclarationClientCapabilities struct {
+		// Whether declaration supports dynamic registration. If this is set to `true`
+		// the client supports the new `DeclarationRegistrationOptions` return value
+		// for the corresponding server capability as well.
+		DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
+		// The client supports additional metadata in the form of declaration links.
+		LinkSupport bool `json:"linkSupport,omitempty"`
+	}
+)
 
 // Information about where a symbol is declared.
 //
@@ -1299,11 +1303,13 @@ type DeclarationClientCapabilities struct {
 // by the client.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#declarationLink
-type DeclarationLink = LocationLink // (alias)
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#declarationOptions
-type DeclarationOptions struct {
-	WorkDoneProgressOptions
-}
+type (
+	DeclarationLink = LocationLink // (alias)
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#declarationOptions
+	DeclarationOptions struct {
+		WorkDoneProgressOptions
+	}
+)
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#declarationParams
 type DeclarationParams struct {
@@ -1327,18 +1333,20 @@ type DeclarationRegistrationOptions struct {
 // by the client.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#definition
-type Definition = Or_Definition // (alias)
-// Client Capabilities for a {@link DefinitionRequest}.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#definitionClientCapabilities
-type DefinitionClientCapabilities struct {
-	// Whether definition supports dynamic registration.
-	DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
-	// The client supports additional metadata in the form of definition links.
+type (
+	Definition = Or_Definition // (alias)
+	// Client Capabilities for a {@link DefinitionRequest}.
 	//
-	// @since 3.14.0
-	LinkSupport bool `json:"linkSupport,omitempty"`
-}
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#definitionClientCapabilities
+	DefinitionClientCapabilities struct {
+		// Whether definition supports dynamic registration.
+		DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
+		// The client supports additional metadata in the form of definition links.
+		//
+		// @since 3.14.0
+		LinkSupport bool `json:"linkSupport,omitempty"`
+	}
+)
 
 // Information about where a symbol is defined.
 //
@@ -1346,13 +1354,15 @@ type DefinitionClientCapabilities struct {
 // the defining symbol
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#definitionLink
-type DefinitionLink = LocationLink // (alias)
-// Server Capabilities for a {@link DefinitionRequest}.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#definitionOptions
-type DefinitionOptions struct {
-	WorkDoneProgressOptions
-}
+type (
+	DefinitionLink = LocationLink // (alias)
+	// Server Capabilities for a {@link DefinitionRequest}.
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#definitionOptions
+	DefinitionOptions struct {
+		WorkDoneProgressOptions
+	}
+)
 
 // Parameters for a {@link DefinitionRequest}.
 //
@@ -1781,11 +1791,13 @@ type DocumentDiagnosticParams struct {
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#documentDiagnosticReport
-type DocumentDiagnosticReport = Or_DocumentDiagnosticReport // (alias)
-// The document diagnostic report kinds.
-//
-// @since 3.17.0
-type DocumentDiagnosticReportKind string
+type (
+	DocumentDiagnosticReport = Or_DocumentDiagnosticReport // (alias)
+	// The document diagnostic report kinds.
+	//
+	// @since 3.17.0
+	DocumentDiagnosticReportKind string
+)
 
 // A partial result for a document diagnostic report.
 //
@@ -1802,14 +1814,16 @@ type DocumentDiagnosticReportPartialResult struct {
 // @since 3.17.0 - proposed support for NotebookCellTextDocumentFilter.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#documentFilter
-type DocumentFilter = Or_DocumentFilter // (alias)
-// Client capabilities of a {@link DocumentFormattingRequest}.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#documentFormattingClientCapabilities
-type DocumentFormattingClientCapabilities struct {
-	// Whether formatting supports dynamic registration.
-	DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
-}
+type (
+	DocumentFilter = Or_DocumentFilter // (alias)
+	// Client capabilities of a {@link DocumentFormattingRequest}.
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#documentFormattingClientCapabilities
+	DocumentFormattingClientCapabilities struct {
+		// Whether formatting supports dynamic registration.
+		DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
+	}
+)
 
 // Provider options for a {@link DocumentFormattingRequest}.
 //
@@ -2059,39 +2073,41 @@ type DocumentRangesFormattingParams struct {
 // The use of a string as a document filter is deprecated @since 3.16.0.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#documentSelector
-type DocumentSelector = []DocumentFilter // (alias)
-// Represents programming constructs like variables, classes, interfaces etc.
-// that appear in a document. Document symbols can be hierarchical and they
-// have two ranges: one that encloses its definition and one that points to
-// its most interesting range, e.g. the range of an identifier.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#documentSymbol
-type DocumentSymbol struct {
-	// The name of this symbol. Will be displayed in the user interface and therefore must not be
-	// an empty string or a string only consisting of white spaces.
-	Name string `json:"name"`
-	// More detail for this symbol, e.g the signature of a function.
-	Detail string `json:"detail,omitempty"`
-	// The kind of this symbol.
-	Kind SymbolKind `json:"kind"`
-	// Tags for this document symbol.
+type (
+	DocumentSelector = []DocumentFilter // (alias)
+	// Represents programming constructs like variables, classes, interfaces etc.
+	// that appear in a document. Document symbols can be hierarchical and they
+	// have two ranges: one that encloses its definition and one that points to
+	// its most interesting range, e.g. the range of an identifier.
 	//
-	// @since 3.16.0
-	Tags []SymbolTag `json:"tags,omitempty"`
-	// Indicates if this symbol is deprecated.
-	//
-	// @deprecated Use tags instead
-	Deprecated bool `json:"deprecated,omitempty"`
-	// The range enclosing this symbol not including leading/trailing whitespace but everything else
-	// like comments. This information is typically used to determine if the clients cursor is
-	// inside the symbol to reveal in the symbol in the UI.
-	Range Range `json:"range"`
-	// The range that should be selected and revealed when this symbol is being picked, e.g the name of a function.
-	// Must be contained by the `range`.
-	SelectionRange Range `json:"selectionRange"`
-	// Children of this symbol, e.g. properties of a class.
-	Children []DocumentSymbol `json:"children,omitempty"`
-}
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#documentSymbol
+	DocumentSymbol struct {
+		// The name of this symbol. Will be displayed in the user interface and therefore must not be
+		// an empty string or a string only consisting of white spaces.
+		Name string `json:"name"`
+		// More detail for this symbol, e.g the signature of a function.
+		Detail string `json:"detail,omitempty"`
+		// The kind of this symbol.
+		Kind SymbolKind `json:"kind"`
+		// Tags for this document symbol.
+		//
+		// @since 3.16.0
+		Tags []SymbolTag `json:"tags,omitempty"`
+		// Indicates if this symbol is deprecated.
+		//
+		// @deprecated Use tags instead
+		Deprecated bool `json:"deprecated,omitempty"`
+		// The range enclosing this symbol not including leading/trailing whitespace but everything else
+		// like comments. This information is typically used to determine if the clients cursor is
+		// inside the symbol to reveal in the symbol in the UI.
+		Range Range `json:"range"`
+		// The range that should be selected and revealed when this symbol is being picked, e.g the name of a function.
+		// Must be contained by the `range`.
+		SelectionRange Range `json:"selectionRange"`
+		// Children of this symbol, e.g. properties of a class.
+		Children []DocumentSymbol `json:"children,omitempty"`
+	}
+)
 
 // Client Capabilities for a {@link DocumentSymbolRequest}.
 //
@@ -2554,17 +2570,19 @@ type GeneralClientCapabilities struct {
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#globPattern
-type GlobPattern = Or_GlobPattern // (alias)
-// The result of a hover request.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#hover
-type Hover struct {
-	// The hover's content
-	Contents MarkupContent `json:"contents"`
-	// An optional range inside the text document that is used to
-	// visualize the hover, e.g. by changing the background color.
-	Range Range `json:"range,omitempty"`
-}
+type (
+	GlobPattern = Or_GlobPattern // (alias)
+	// The result of a hover request.
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#hover
+	Hover struct {
+		// The hover's content
+		Contents MarkupContent `json:"contents"`
+		// An optional range inside the text document that is used to
+		// visualize the hover, e.g. by changing the background color.
+		Range Range `json:"range,omitempty"`
+	}
+)
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#hoverClientCapabilities
 type HoverClientCapabilities struct {
@@ -2662,8 +2680,7 @@ type InitializeResult struct {
 }
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#initializedParams
-type InitializedParams struct {
-}
+type InitializedParams struct{}
 
 // Inlay hint information.
 //
@@ -2916,16 +2933,18 @@ type InlineCompletionTriggerKind uint32
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#inlineValue
-type InlineValue = Or_InlineValue // (alias)
-// Client capabilities specific to inline values.
-//
-// @since 3.17.0
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#inlineValueClientCapabilities
-type InlineValueClientCapabilities struct {
-	// Whether implementation supports dynamic registration for inline value providers.
-	DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
-}
+type (
+	InlineValue = Or_InlineValue // (alias)
+	// Client capabilities specific to inline values.
+	//
+	// @since 3.17.0
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#inlineValueClientCapabilities
+	InlineValueClientCapabilities struct {
+		// Whether implementation supports dynamic registration for inline value providers.
+		DynamicRegistration bool `json:"dynamicRegistration,omitempty"`
+	}
+)
 
 // @since 3.17.0
 //
@@ -3056,25 +3075,31 @@ type InsertTextFormat uint32
 // item insertion.
 //
 // @since 3.16.0
-type InsertTextMode uint32
-type LSPAny = any
+type (
+	InsertTextMode uint32
+	LSPAny         = any
+)
 
 // LSP arrays.
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#lSPArray
-type LSPArray = []any // (alias)
-type LSPErrorCodes int32
+type (
+	LSPArray      = []any // (alias)
+	LSPErrorCodes int32
+)
 
 // LSP object definition.
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#lSPObject
-type LSPObject = map[string]LSPAny // (alias)
-// Predefined Language kinds
-// @since 3.18.0
-// @proposed
-type LanguageKind string
+type (
+	LSPObject = map[string]LSPAny // (alias)
+	// Predefined Language kinds
+	// @since 3.18.0
+	// @proposed
+	LanguageKind string
+)
 
 // Client capabilities for the linked editing range request.
 //
@@ -3122,8 +3147,7 @@ type LinkedEditingRanges struct {
 }
 
 // created for Literal (Lit_ClientSemanticTokensRequestOptions_range_Item1)
-type Lit_ClientSemanticTokensRequestOptions_range_Item1 struct {
-}
+type Lit_ClientSemanticTokensRequestOptions_range_Item1 struct{}
 
 // Represents a location inside a resource, such as a line
 // inside a text file.
@@ -3211,15 +3235,17 @@ type MarkdownClientCapabilities struct {
 // @deprecated use MarkupContent instead.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#markedString
-type MarkedString = Or_MarkedString // (alias)
-// @since 3.18.0
-// @deprecated use MarkupContent instead.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#markedStringWithLanguage
-type MarkedStringWithLanguage struct {
-	Language string `json:"language"`
-	Value    string `json:"value"`
-}
+type (
+	MarkedString = Or_MarkedString // (alias)
+	// @since 3.18.0
+	// @deprecated use MarkupContent instead.
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#markedStringWithLanguage
+	MarkedStringWithLanguage struct {
+		Language string `json:"language"`
+		Value    string `json:"value"`
+	}
+)
 
 // A `MarkupContent` literal represents a string value which content is interpreted base on its
 // kind flag. Currently the protocol supports `plaintext` and `markdown` as markup kinds.
@@ -3487,20 +3513,22 @@ type NotebookDocumentClientCapabilities struct {
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#notebookDocumentFilter
-type NotebookDocumentFilter = Or_NotebookDocumentFilter // (alias)
-// A notebook document filter where `notebookType` is required field.
-//
-// @since 3.18.0
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#notebookDocumentFilterNotebookType
-type NotebookDocumentFilterNotebookType struct {
-	// The type of the enclosing notebook.
-	NotebookType string `json:"notebookType"`
-	// A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-	Scheme string `json:"scheme,omitempty"`
-	// A glob pattern.
-	Pattern *GlobPattern `json:"pattern,omitempty"`
-}
+type (
+	NotebookDocumentFilter = Or_NotebookDocumentFilter // (alias)
+	// A notebook document filter where `notebookType` is required field.
+	//
+	// @since 3.18.0
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#notebookDocumentFilterNotebookType
+	NotebookDocumentFilterNotebookType struct {
+		// The type of the enclosing notebook.
+		NotebookType string `json:"notebookType"`
+		// A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
+		Scheme string `json:"scheme,omitempty"`
+		// A glob pattern.
+		Pattern *GlobPattern `json:"pattern,omitempty"`
+	}
+)
 
 // A notebook document filter where `pattern` is required field.
 //
@@ -3961,8 +3989,7 @@ type Or_textDocument_declaration struct {
 }
 
 // created for Literal (Lit_SemanticTokensOptions_range_Item1)
-type PRangeESemanticTokensOptions struct {
-}
+type PRangeESemanticTokensOptions struct{}
 
 // The parameters of a configuration request.
 //
@@ -4019,51 +4046,53 @@ type PartialResultParams struct {
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#pattern
-type Pattern = string // (alias)
-// Position in a text document expressed as zero-based line and character
-// offset. Prior to 3.17 the offsets were always based on a UTF-16 string
-// representation. So a string of the form `a𐐀b` the character offset of the
-// character `a` is 0, the character offset of `𐐀` is 1 and the character
-// offset of b is 3 since `𐐀` is represented using two code units in UTF-16.
-// Since 3.17 clients and servers can agree on a different string encoding
-// representation (e.g. UTF-8). The client announces it's supported encoding
-// via the client capability [`general.positionEncodings`](https://microsoft.github.io/language-server-protocol/specifications/specification-current/#clientCapabilities).
-// The value is an array of position encodings the client supports, with
-// decreasing preference (e.g. the encoding at index `0` is the most preferred
-// one). To stay backwards compatible the only mandatory encoding is UTF-16
-// represented via the string `utf-16`. The server can pick one of the
-// encodings offered by the client and signals that encoding back to the
-// client via the initialize result's property
-// [`capabilities.positionEncoding`](https://microsoft.github.io/language-server-protocol/specifications/specification-current/#serverCapabilities). If the string value
-// `utf-16` is missing from the client's capability `general.positionEncodings`
-// servers can safely assume that the client supports UTF-16. If the server
-// omits the position encoding in its initialize result the encoding defaults
-// to the string value `utf-16`. Implementation considerations: since the
-// conversion from one encoding into another requires the content of the
-// file / line the conversion is best done where the file is read which is
-// usually on the server side.
-//
-// Positions are line end character agnostic. So you can not specify a position
-// that denotes `\r|\n` or `\n|` where `|` represents the character offset.
-//
-// @since 3.17.0 - support for negotiated position encoding.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#position
-type Position struct {
-	// Line position in a document (zero-based).
+type (
+	Pattern = string // (alias)
+	// Position in a text document expressed as zero-based line and character
+	// offset. Prior to 3.17 the offsets were always based on a UTF-16 string
+	// representation. So a string of the form `a𐐀b` the character offset of the
+	// character `a` is 0, the character offset of `𐐀` is 1 and the character
+	// offset of b is 3 since `𐐀` is represented using two code units in UTF-16.
+	// Since 3.17 clients and servers can agree on a different string encoding
+	// representation (e.g. UTF-8). The client announces it's supported encoding
+	// via the client capability [`general.positionEncodings`](https://microsoft.github.io/language-server-protocol/specifications/specification-current/#clientCapabilities).
+	// The value is an array of position encodings the client supports, with
+	// decreasing preference (e.g. the encoding at index `0` is the most preferred
+	// one). To stay backwards compatible the only mandatory encoding is UTF-16
+	// represented via the string `utf-16`. The server can pick one of the
+	// encodings offered by the client and signals that encoding back to the
+	// client via the initialize result's property
+	// [`capabilities.positionEncoding`](https://microsoft.github.io/language-server-protocol/specifications/specification-current/#serverCapabilities). If the string value
+	// `utf-16` is missing from the client's capability `general.positionEncodings`
+	// servers can safely assume that the client supports UTF-16. If the server
+	// omits the position encoding in its initialize result the encoding defaults
+	// to the string value `utf-16`. Implementation considerations: since the
+	// conversion from one encoding into another requires the content of the
+	// file / line the conversion is best done where the file is read which is
+	// usually on the server side.
 	//
-	// If a line number is greater than the number of lines in a document, it defaults back to the number of lines in the document.
-	// If a line number is negative, it defaults to 0.
-	Line uint32 `json:"line"`
-	// Character offset on a line in a document (zero-based).
+	// Positions are line end character agnostic. So you can not specify a position
+	// that denotes `\r|\n` or `\n|` where `|` represents the character offset.
 	//
-	// The meaning of this offset is determined by the negotiated
-	// `PositionEncodingKind`.
+	// @since 3.17.0 - support for negotiated position encoding.
 	//
-	// If the character value is greater than the line length it defaults back to the
-	// line length.
-	Character uint32 `json:"character"`
-}
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#position
+	Position struct {
+		// Line position in a document (zero-based).
+		//
+		// If a line number is greater than the number of lines in a document, it defaults back to the number of lines in the document.
+		// If a line number is negative, it defaults to 0.
+		Line uint32 `json:"line"`
+		// Character offset on a line in a document (zero-based).
+		//
+		// The meaning of this offset is determined by the negotiated
+		// `PositionEncodingKind`.
+		//
+		// If the character value is greater than the line length it defaults back to the
+		// line length.
+		Character uint32 `json:"character"`
+	}
+)
 
 // A set of predefined position encoding kinds.
 //
@@ -4092,8 +4121,10 @@ type PrepareRenamePlaceholder struct {
 }
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#prepareRenameResult
-type PrepareRenameResult = PrepareRenamePlaceholder // (alias)
-type PrepareSupportDefaultBehavior uint32
+type (
+	PrepareRenameResult           = PrepareRenamePlaceholder // (alias)
+	PrepareSupportDefaultBehavior uint32
+)
 
 // A previous result id in a workspace pull request.
 //
@@ -4130,18 +4161,20 @@ type ProgressParams struct {
 }
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#progressToken
-type ProgressToken = any // (alias)
-// The publish diagnostic client capabilities.
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#publishDiagnosticsClientCapabilities
-type PublishDiagnosticsClientCapabilities struct {
-	// Whether the client interprets the version property of the
-	// `textDocument/publishDiagnostics` notification's parameter.
+type (
+	ProgressToken = any // (alias)
+	// The publish diagnostic client capabilities.
 	//
-	// @since 3.15.0
-	VersionSupport bool `json:"versionSupport,omitempty"`
-	DiagnosticsCapabilities
-}
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#publishDiagnosticsClientCapabilities
+	PublishDiagnosticsClientCapabilities struct {
+		// Whether the client interprets the version property of the
+		// `textDocument/publishDiagnostics` notification's parameter.
+		//
+		// @since 3.15.0
+		VersionSupport bool `json:"versionSupport,omitempty"`
+		DiagnosticsCapabilities
+	}
+)
 
 // The publish diagnostic notification's parameters.
 //
@@ -4240,18 +4273,20 @@ type RegistrationParams struct {
 }
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#regularExpressionEngineKind
-type RegularExpressionEngineKind = string // (alias)
-// Client capabilities specific to regular expressions.
-//
-// @since 3.16.0
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#regularExpressionsClientCapabilities
-type RegularExpressionsClientCapabilities struct {
-	// The engine's name.
-	Engine RegularExpressionEngineKind `json:"engine"`
-	// The engine's version.
-	Version string `json:"version,omitempty"`
-}
+type (
+	RegularExpressionEngineKind = string // (alias)
+	// Client capabilities specific to regular expressions.
+	//
+	// @since 3.16.0
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#regularExpressionsClientCapabilities
+	RegularExpressionsClientCapabilities struct {
+		// The engine's name.
+		Engine RegularExpressionEngineKind `json:"engine"`
+		// The engine's version.
+		Version string `json:"version,omitempty"`
+	}
+)
 
 // A full diagnostic report with a set of related documents.
 //
@@ -5255,20 +5290,22 @@ type TextDocumentClientCapabilities struct {
 // it is considered to be the full content of the document.
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#textDocumentContentChangeEvent
-type TextDocumentContentChangeEvent = TextDocumentContentChangePartial // (alias)
-// @since 3.18.0
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#textDocumentContentChangePartial
-type TextDocumentContentChangePartial struct {
-	// The range of the document that changed.
-	Range *Range `json:"range,omitempty"`
-	// The optional length of the range that got replaced.
+type (
+	TextDocumentContentChangeEvent = TextDocumentContentChangePartial // (alias)
+	// @since 3.18.0
 	//
-	// @deprecated use range instead.
-	RangeLength uint32 `json:"rangeLength"`
-	// The new text for the provided range.
-	Text string `json:"text"`
-}
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#textDocumentContentChangePartial
+	TextDocumentContentChangePartial struct {
+		// The range of the document that changed.
+		Range *Range `json:"range,omitempty"`
+		// The optional length of the range that got replaced.
+		//
+		// @deprecated use range instead.
+		RangeLength uint32 `json:"rangeLength"`
+		// The new text for the provided range.
+		Text string `json:"text"`
+	}
+)
 
 // @since 3.18.0
 //
@@ -5371,22 +5408,24 @@ type TextDocumentEdit struct {
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#textDocumentFilter
-type TextDocumentFilter = Or_TextDocumentFilter // (alias)
-// A document filter where `language` is required field.
-//
-// @since 3.18.0
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#textDocumentFilterLanguage
-type TextDocumentFilterLanguage struct {
-	// A language id, like `typescript`.
-	Language string `json:"language"`
-	// A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-	Scheme string `json:"scheme,omitempty"`
-	// A glob pattern, like **​/*.{ts,js}. See TextDocumentFilter for examples.
+type (
+	TextDocumentFilter = Or_TextDocumentFilter // (alias)
+	// A document filter where `language` is required field.
 	//
-	// @since 3.18.0 - support for relative patterns.
-	Pattern *GlobPattern `json:"pattern,omitempty"`
-}
+	// @since 3.18.0
+	//
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#textDocumentFilterLanguage
+	TextDocumentFilterLanguage struct {
+		// A language id, like `typescript`.
+		Language string `json:"language"`
+		// A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
+		Scheme string `json:"scheme,omitempty"`
+		// A glob pattern, like **​/*.{ts,js}. See TextDocumentFilter for examples.
+		//
+		// @since 3.18.0 - support for relative patterns.
+		Pattern *GlobPattern `json:"pattern,omitempty"`
+	}
+)
 
 // A document filter where `pattern` is required field.
 //
@@ -5523,8 +5562,10 @@ type TextEdit struct {
 	// empty string.
 	NewText string `json:"newText"`
 }
-type TokenFormat string
-type TraceValue string
+type (
+	TokenFormat string
+	TraceValue  string
+)
 
 // Since 3.6.0
 //
@@ -5713,14 +5754,16 @@ type VersionedTextDocumentIdentifier struct {
 	Version int32 `json:"version"`
 	TextDocumentIdentifier
 }
-type WatchKind = uint32 // The parameters sent in a will save text document notification.
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#willSaveTextDocumentParams
-type WillSaveTextDocumentParams struct {
-	// The document that will be saved.
-	TextDocument TextDocumentIdentifier `json:"textDocument"`
-	// The 'TextDocumentSaveReason'.
-	Reason TextDocumentSaveReason `json:"reason"`
-}
+type (
+	WatchKind = uint32 // The parameters sent in a will save text document notification.
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#willSaveTextDocumentParams
+	WillSaveTextDocumentParams struct {
+		// The document that will be saved.
+		TextDocument TextDocumentIdentifier `json:"textDocument"`
+		// The 'TextDocumentSaveReason'.
+		Reason TextDocumentSaveReason `json:"reason"`
+	}
+)
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#windowClientCapabilities
 type WindowClientCapabilities struct {
@@ -5936,43 +5979,45 @@ type WorkspaceDiagnosticReportPartialResult struct {
 // @since 3.17.0
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#workspaceDocumentDiagnosticReport
-type WorkspaceDocumentDiagnosticReport = Or_WorkspaceDocumentDiagnosticReport // (alias)
-// A workspace edit represents changes to many resources managed in the workspace. The edit
-// should either provide `changes` or `documentChanges`. If documentChanges are present
-// they are preferred over `changes` if the client can handle versioned document edits.
-//
-// Since version 3.13.0 a workspace edit can contain resource operations as well. If resource
-// operations are present clients need to execute the operations in the order in which they
-// are provided. So a workspace edit for example can consist of the following two changes:
-// (1) a create file a.txt and (2) a text document edit which insert text into file a.txt.
-//
-// An invalid sequence (e.g. (1) delete file a.txt and (2) insert text into file a.txt) will
-// cause failure of the operation. How the client recovers from the failure is described by
-// the client capability: `workspace.workspaceEdit.failureHandling`
-//
-// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#workspaceEdit
-type WorkspaceEdit struct {
-	// Holds changes to existing resources.
-	Changes map[DocumentURI][]TextEdit `json:"changes,omitempty"`
-	// Depending on the client capability `workspace.workspaceEdit.resourceOperations` document changes
-	// are either an array of `TextDocumentEdit`s to express changes to n different text documents
-	// where each text document edit addresses a specific version of a text document. Or it can contain
-	// above `TextDocumentEdit`s mixed with create, rename and delete file / folder operations.
+type (
+	WorkspaceDocumentDiagnosticReport = Or_WorkspaceDocumentDiagnosticReport // (alias)
+	// A workspace edit represents changes to many resources managed in the workspace. The edit
+	// should either provide `changes` or `documentChanges`. If documentChanges are present
+	// they are preferred over `changes` if the client can handle versioned document edits.
 	//
-	// Whether a client supports versioned document edits is expressed via
-	// `workspace.workspaceEdit.documentChanges` client capability.
+	// Since version 3.13.0 a workspace edit can contain resource operations as well. If resource
+	// operations are present clients need to execute the operations in the order in which they
+	// are provided. So a workspace edit for example can consist of the following two changes:
+	// (1) a create file a.txt and (2) a text document edit which insert text into file a.txt.
 	//
-	// If a client neither supports `documentChanges` nor `workspace.workspaceEdit.resourceOperations` then
-	// only plain `TextEdit`s using the `changes` property are supported.
-	DocumentChanges []DocumentChange `json:"documentChanges,omitempty"`
-	// A map of change annotations that can be referenced in `AnnotatedTextEdit`s or create, rename and
-	// delete file / folder operations.
+	// An invalid sequence (e.g. (1) delete file a.txt and (2) insert text into file a.txt) will
+	// cause failure of the operation. How the client recovers from the failure is described by
+	// the client capability: `workspace.workspaceEdit.failureHandling`
 	//
-	// Whether clients honor this property depends on the client capability `workspace.changeAnnotationSupport`.
-	//
-	// @since 3.16.0
-	ChangeAnnotations map[ChangeAnnotationIdentifier]ChangeAnnotation `json:"changeAnnotations,omitempty"`
-}
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#workspaceEdit
+	WorkspaceEdit struct {
+		// Holds changes to existing resources.
+		Changes map[DocumentURI][]TextEdit `json:"changes,omitempty"`
+		// Depending on the client capability `workspace.workspaceEdit.resourceOperations` document changes
+		// are either an array of `TextDocumentEdit`s to express changes to n different text documents
+		// where each text document edit addresses a specific version of a text document. Or it can contain
+		// above `TextDocumentEdit`s mixed with create, rename and delete file / folder operations.
+		//
+		// Whether a client supports versioned document edits is expressed via
+		// `workspace.workspaceEdit.documentChanges` client capability.
+		//
+		// If a client neither supports `documentChanges` nor `workspace.workspaceEdit.resourceOperations` then
+		// only plain `TextEdit`s using the `changes` property are supported.
+		DocumentChanges []DocumentChange `json:"documentChanges,omitempty"`
+		// A map of change annotations that can be referenced in `AnnotatedTextEdit`s or create, rename and
+		// delete file / folder operations.
+		//
+		// Whether clients honor this property depends on the client capability `workspace.changeAnnotationSupport`.
+		//
+		// @since 3.16.0
+		ChangeAnnotations map[ChangeAnnotationIdentifier]ChangeAnnotation `json:"changeAnnotations,omitempty"`
+	}
+)
 
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#workspaceEditClientCapabilities
 type WorkspaceEditClientCapabilities struct {

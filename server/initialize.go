@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/internal/protocol/semtok"
-	"github.com/ink0rr/rockide/shared"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/shared"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

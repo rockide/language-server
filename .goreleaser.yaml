@@ -5,15 +5,18 @@ before:
     - go mod tidy
 
 builds:
-  - goos:
+  - id: rockide
+    main: ./cmd/rockide
+    binary: rockide
+    ldflags:
+      - -s -X main.version={{ .Version }}
+    goos:
       - darwin
       - linux
       - windows
     goarch:
       - amd64
       - arm64
-    ldflags:
-      - -X main.version={{ .Version }}
 
 changelog:
   sort: asc

@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"github.com/ink0rr/rockide/internal/molang"
-	"github.com/ink0rr/rockide/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/molang"
+	"github.com/rockide/language-server/internal/protocol/semtok"
 )
 
 var tokenType = map[semtok.Type]bool{

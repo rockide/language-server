@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/internal/textdocument"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/internal/textdocument"
 )
 
 type Handler interface {

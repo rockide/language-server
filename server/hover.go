@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 
-	"github.com/ink0rr/rockide/handlers"
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/internal/textdocument"
+	"github.com/rockide/language-server/handlers"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/internal/textdocument"
 	"github.com/sourcegraph/jsonrpc2"
 )
 

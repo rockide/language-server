@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/ink0rr/rockide/core"
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/shared"
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/shared"
 	"github.com/rockide/vanilla"
 )
 

@@ -4,13 +4,13 @@ import (
 	"slices"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/ink0rr/rockide/core"
-	"github.com/ink0rr/rockide/internal/jsonc"
-	"github.com/ink0rr/rockide/internal/protocol"
-	"github.com/ink0rr/rockide/internal/protocol/semtok"
-	"github.com/ink0rr/rockide/internal/textdocument"
-	"github.com/ink0rr/rockide/shared"
-	"github.com/ink0rr/rockide/stores"
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/internal/jsonc"
+	"github.com/rockide/language-server/internal/protocol"
+	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/textdocument"
+	"github.com/rockide/language-server/shared"
+	"github.com/rockide/language-server/stores"
 )
 
 const defaultScope = "__default__"

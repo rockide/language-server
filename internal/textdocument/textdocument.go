@@ -5,7 +5,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/ink0rr/rockide/internal/protocol"
+	"github.com/rockide/language-server/internal/protocol"
 )
 
 type TextDocument struct {

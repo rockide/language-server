@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/ink0rr/rockide/stores"
+	"github.com/rockide/language-server/stores"
 )
 
 var biomeTags = [...]string{

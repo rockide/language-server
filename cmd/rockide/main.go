@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/ink0rr/rockide/server"
+	"github.com/rockide/language-server/server"
 	"github.com/sourcegraph/jsonrpc2"
 )
 
