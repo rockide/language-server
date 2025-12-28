@@ -104,6 +104,7 @@ var (
 	ItemCustomComponent  = NewSymbolBinding(nil)
 	ItemId               = NewSymbolBinding(vanilla.ItemId) // Blocks are contained within the "block" scope
 	ItemTag              = NewSymbolBinding(vanilla.ItemTag)
+	RecipeId             = NewSymbolBinding(vanilla.RecipeId)
 	RecipeTag            = NewSymbolBinding(vanilla.RecipeTag)
 	WorldgenProcessor    = NewSymbolBinding(vanilla.WorldgenProcessorId)
 	WorldgenTemplatePool = NewSymbolBinding(vanilla.WorldgenTemplatePoolId)
