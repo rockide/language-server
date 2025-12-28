@@ -9,10 +9,14 @@ import (
 )
 
 func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core.Symbol {
+	s, ok := pattern.ToString()
+	if !ok {
+		return nil
+	}
 	res := []core.Symbol{}
 	set := mapset.NewThreadUnsafeSet[string]()
 	for _, ref := range b {
-		if doublestar.MatchUnvalidated("**/"+pattern.ToString(), string(ref.URI)) {
+		if doublestar.MatchUnvalidated("**/"+s, string(ref.URI)) {
 			set.Add(ref.Value)
 		}
 	}

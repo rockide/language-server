@@ -60,6 +60,15 @@ func Initialized(ctx context.Context, conn *jsonrpc2.Conn, params *protocol.Init
 	if project == nil {
 		return nil
 	}
+
+	var watcherPattern string
+	if project.BP != "" && project.RP != "" {
+		watcherPattern = fmt.Sprintf("{%s,%s}/**/*", project.BP, project.RP)
+	} else if project.BP != "" {
+		watcherPattern = project.BP + "/**/*"
+	} else if project.RP != "" {
+		watcherPattern = project.RP + "/**/*"
+	}
 	fileWatcher := protocol.Registration{
 		ID:     "fileWatcher",
 		Method: "workspace/didChangeWatchedFiles",
@@ -67,7 +76,7 @@ func Initialized(ctx context.Context, conn *jsonrpc2.Conn, params *protocol.Init
 			Watchers: []protocol.FileSystemWatcher{{
 				GlobPattern: protocol.GlobPattern{Value: protocol.RelativePattern{
 					BaseURI: protocol.URIFromPath(shared.Getwd()),
-					Pattern: fmt.Sprintf("{%s,%s}/**/*", project.BP, project.RP),
+					Pattern: watcherPattern,
 				}},
 			}},
 		},

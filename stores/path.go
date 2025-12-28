@@ -23,13 +23,16 @@ func NewPathStore(vanillaData mapset.Set[string], trimSuffixes ...string) *PathS
 }
 
 func (s *PathStore) Insert(pattern shared.Pattern, uri protocol.DocumentURI) {
+	packDir, ok := pattern.PackDir()
+	if !ok {
+		return
+	}
 	path, err := filepath.Rel(shared.Getwd(), uri.Path())
 	if err != nil {
 		panic(err)
 	}
-	packType := pattern.PackType()
 	path = filepath.ToSlash(path)
-	_, path, found := strings.Cut(path, packType+"/")
+	_, path, found := strings.Cut(path, packDir+"/")
 	if !found {
 		panic("invalid project path")
 	}

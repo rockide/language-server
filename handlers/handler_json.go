@@ -47,8 +47,8 @@ type JsonHandler struct {
 	MolangSemanticLocations []shared.JsonPath
 }
 
-func (j *JsonHandler) GetPattern() string {
-	return j.Pattern.ToString()
+func (j *JsonHandler) GetPattern() shared.Pattern {
+	return j.Pattern
 }
 
 func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {

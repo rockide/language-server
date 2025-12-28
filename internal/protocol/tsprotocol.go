@@ -6258,8 +6258,8 @@ type WorkspaceUnchangedDocumentDiagnosticReport struct {
 
 type InitializationOptions struct {
 	ProjectPaths *struct {
-		BehaviorPack string `json:"behaviorPack"`
-		ResourcePack string `json:"resourcePack"`
+		BehaviorPack string `json:"behaviorPack,omitzero"`
+		ResourcePack string `json:"resourcePack,omitzero"`
 	} `json:"projectPaths,omitempty"`
 }
 

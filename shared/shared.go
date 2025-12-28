@@ -30,27 +30,25 @@ func SetProject(p *core.Project) {
 	project = p
 }
 
-const (
-	BpGlob      = "{behavior_pack,*BP,BP_*,*bp,bp_*}"
-	RpGlob      = "{resource_pack,*RP,RP_*,*rp,rp_*}"
-	ProjectGlob = "{behavior_pack,*BP,BP_*,*bp,bp_*,resource_pack,*RP,RP_*,*rp,rp_*}"
-)
-
 type Pattern string
 
-func (p Pattern) PackType() string {
+func (p Pattern) PackDir() (dir string, ok bool) {
 	switch p[0] {
 	case 'b':
-		return project.BP
+		return project.BP, project.BP != ""
 	case 'r':
-		return project.RP
+		return project.RP, project.RP != ""
 	default:
 		panic("invalid pattern")
 	}
 }
 
-func (p Pattern) ToString() string {
-	return p.PackType() + string(p[1:])
+func (p Pattern) ToString() (s string, ok bool) {
+	dir, ok := p.PackDir()
+	if !ok {
+		return
+	}
+	return dir + string(p[1:]), true
 }
 
 func behaviorPattern(pattern string) Pattern {

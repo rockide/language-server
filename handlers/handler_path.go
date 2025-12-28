@@ -12,8 +12,8 @@ type Path struct {
 	Store   *stores.PathStore
 }
 
-func (s *Path) GetPattern() string {
-	return s.Pattern.ToString()
+func (s *Path) GetPattern() shared.Pattern {
+	return s.Pattern
 }
 
 func (s *Path) Parse(uri protocol.DocumentURI) error {

@@ -6,10 +6,11 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/language-server/internal/textdocument"
+	"github.com/rockide/language-server/shared"
 )
 
 type Handler interface {
-	GetPattern() string
+	GetPattern() shared.Pattern
 	Parse(uri protocol.DocumentURI) error
 	Delete(uri protocol.DocumentURI)
 }
@@ -102,7 +103,8 @@ func GetAll() []Handler {
 func Find(uri protocol.DocumentURI) Handler {
 	path := filepath.ToSlash(uri.Path())
 	for _, handler := range handlerList {
-		if doublestar.MatchUnvalidated("**/"+handler.GetPattern(), path) {
+		pattern, ok := handler.GetPattern().ToString()
+		if ok && doublestar.MatchUnvalidated("**/"+pattern, path) {
 			return handler
 		}
 	}

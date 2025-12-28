@@ -20,8 +20,8 @@ type LangHandler struct {
 	Client  bool
 }
 
-func (l *LangHandler) GetPattern() string {
-	return l.Pattern.ToString()
+func (l *LangHandler) GetPattern() shared.Pattern {
+	return l.Pattern
 }
 
 func (l *LangHandler) Parse(uri protocol.DocumentURI) error {

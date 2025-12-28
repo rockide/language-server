@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"log"
 	"os"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,10 +18,10 @@ import (
 func findProjectPaths(options *protocol.InitializationOptions) (*core.Project, error) {
 	// try to get project paths from user settings
 	if options != nil && options.ProjectPaths != nil {
-		return &core.Project{
-			BP: filepath.ToSlash(filepath.Clean(options.ProjectPaths.BehaviorPack)),
-			RP: filepath.ToSlash(filepath.Clean(options.ProjectPaths.ResourcePack)),
-		}, nil
+		paths := options.ProjectPaths
+		if paths.BehaviorPack != "" || paths.ResourcePack != "" {
+			return core.NewProject(paths.BehaviorPack, paths.ResourcePack), nil
+		}
 	}
 
 	// if not found, search the current dir and the 'packs' dir
@@ -32,24 +31,31 @@ func findProjectPaths(options *protocol.InitializationOptions) (*core.Project, e
 	}
 	fsys := os.DirFS(dir)
 
+	var bp string
 	bpPaths, err := doublestar.Glob(fsys, "{behavior_pack,*BP,BP_*,*bp,bp_*}", doublestar.WithFailOnIOErrors())
-	if bpPaths == nil || err != nil {
-		return nil, errors.New("not a minecraft project")
+	if err != nil {
+		return nil, err
 	}
-	bp := dir + "/" + bpPaths[0]
-	log.Printf("Behavior pack: %s", bp)
+	if len(bpPaths) > 0 {
+		bp = dir + "/" + bpPaths[0]
+		log.Printf("Behavior pack: %s", bp)
+	}
 
+	var rp string
 	rpPaths, err := doublestar.Glob(fsys, "{resource_pack,*RP,RP_*,*rp,rp_*}", doublestar.WithFailOnIOErrors())
-	if rpPaths == nil || err != nil {
+	if err != nil {
+		return nil, err
+	}
+	if len(rpPaths) > 0 {
+		rp = dir + "/" + rpPaths[0]
+		log.Printf("Resource pack: %s", rp)
+	}
+
+	if bp == "" && rp == "" {
 		return nil, errors.New("not a minecraft project")
 	}
-	rp := dir + "/" + rpPaths[0]
-	log.Printf("Resource pack: %s", rp)
 
-	return &core.Project{
-		BP: filepath.ToSlash(filepath.Clean(bp)),
-		RP: filepath.ToSlash(filepath.Clean(rp)),
-	}, nil
+	return core.NewProject(bp, rp), nil
 }
 
 func indexWorkspace() {
@@ -63,7 +69,11 @@ func indexWorkspace() {
 	for _, store := range handlers.GetAll() {
 		go func() {
 			defer wg.Done()
-			doublestar.GlobWalk(fsys, store.GetPattern(), func(path string, d fs.DirEntry) error {
+			pattern, ok := store.GetPattern().ToString()
+			if !ok {
+				return
+			}
+			doublestar.GlobWalk(fsys, pattern, func(path string, d fs.DirEntry) error {
 				if d.IsDir() {
 					return nil
 				}
