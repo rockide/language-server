@@ -16,21 +16,12 @@ import (
 	"github.com/rockide/language-server/internal/protocol"
 )
 
-func findProjectPaths(params any) (*core.Project, error) {
+func findProjectPaths(options *protocol.InitializationOptions) (*core.Project, error) {
 	// try to get project paths from user settings
-	options, ok := params.(map[string]any)
-	if ok {
-		bp, ok := options["behaviorPack"].(string)
-		if !ok {
-			return nil, errors.New("invalid initialization options")
-		}
-		rp, ok := options["resourcePack"].(string)
-		if !ok {
-			return nil, errors.New("invalid initialization options")
-		}
+	if options != nil && options.ProjectPaths != nil {
 		return &core.Project{
-			BP: filepath.ToSlash(filepath.Clean(bp)),
-			RP: filepath.ToSlash(filepath.Clean(rp)),
+			BP: filepath.ToSlash(filepath.Clean(options.ProjectPaths.BehaviorPack)),
+			RP: filepath.ToSlash(filepath.Clean(options.ProjectPaths.ResourcePack)),
 		}, nil
 	}
 

@@ -6256,6 +6256,13 @@ type WorkspaceUnchangedDocumentDiagnosticReport struct {
 	UnchangedDocumentDiagnosticReport
 }
 
+type InitializationOptions struct {
+	ProjectPaths *struct {
+		BehaviorPack string `json:"behaviorPack"`
+		ResourcePack string `json:"resourcePack"`
+	} `json:"projectPaths,omitempty"`
+}
+
 // The initialize parameters
 //
 // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification#_InitializeParams
@@ -6293,7 +6300,7 @@ type XInitializeParams struct {
 	// The capabilities provided by the client (editor or tool)
 	Capabilities ClientCapabilities `json:"capabilities"`
 	// User provided initialization options.
-	InitializationOptions any `json:"initializationOptions,omitempty"`
+	InitializationOptions *InitializationOptions `json:"initializationOptions,omitempty"`
 	// The initial trace setting. If omitted trace is disabled ('off').
 	Trace *TraceValue `json:"trace,omitempty"`
 	WorkDoneProgressParams
