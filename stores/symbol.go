@@ -100,6 +100,7 @@ var (
 	EntityEvent          = NewSymbolBinding(nil)
 	EntityFamily         = NewSymbolBinding(vanilla.TypeFamily)
 	FeatureId            = NewSymbolBinding(vanilla.FeatureId)
+	FeatureRuleId        = NewSymbolBinding(nil)
 	ItemCustomComponent  = NewSymbolBinding(nil)
 	ItemId               = NewSymbolBinding(vanilla.ItemId) // Blocks are contained within the "block" scope
 	ItemTag              = NewSymbolBinding(vanilla.ItemTag)
