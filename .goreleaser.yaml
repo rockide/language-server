@@ -1,13 +1,13 @@
 version: 2
 
+project_name: rockide
+
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: rockide
-    main: ./cmd/rockide
-    binary: rockide
+  - main: ./cmd/rockide
     ldflags:
       - -s -X main.version={{ .Version }}
     goos:
