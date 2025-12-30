@@ -21,4 +21,6 @@ func TestPathMatches(t *testing.T) {
 	assertPath(t, jsonc.NewPath("a/b/c"), jsonc.NewPath("b/**"), false)
 	assertPath(t, jsonc.NewPath("a/b/c"), jsonc.NewPath("**/c"), true)
 	assertPath(t, jsonc.NewPath("a/b/c"), jsonc.NewPath("**/d"), false)
+	assertPath(t, jsonc.NewPath("rawtext/0"), jsonc.NewPath("**/rawtext/*"), true)
+	assertPath(t, jsonc.NewPath("rawtext/0/with/rawtext/0"), jsonc.NewPath("**/rawtext/*"), true)
 }

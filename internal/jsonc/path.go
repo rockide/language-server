@@ -32,12 +32,15 @@ func (path Path) Matches(pattern Path) bool {
 				return true
 			}
 
-			// Attempt to find a matching segment for the next part of the path after "**"
-			for pathIndex < len(path) && path[pathIndex] != pattern[patternIndex+1] {
+			// Try to match the rest of the pattern starting from the current pathIndex
+			patternIndex++
+			for pathIndex <= len(path) {
+				if path[pathIndex:].Matches(pattern[patternIndex:]) {
+					return true
+				}
 				pathIndex++
 			}
-			patternIndex++
-			continue
+			return false
 		}
 		// Match current segment
 		if pattern[patternIndex] == "*" || path[pathIndex] == pattern[patternIndex] {
