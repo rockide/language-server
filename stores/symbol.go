@@ -104,8 +104,12 @@ var (
 	ItemCustomComponent  = NewSymbolBinding(nil)
 	ItemId               = NewSymbolBinding(vanilla.ItemId) // Blocks are contained within the "block" scope
 	ItemTag              = NewSymbolBinding(vanilla.ItemTag)
+	ProvidedFogId        = NewSymbolBinding(nil)
 	RecipeId             = NewSymbolBinding(vanilla.RecipeId)
 	RecipeTag            = NewSymbolBinding(vanilla.RecipeTag)
+	ScoreboardObjective  = NewSymbolBinding(nil)
+	Tag                  = NewSymbolBinding(nil)
+	TickingArea          = NewSymbolBinding(nil)
 	WorldgenProcessor    = NewSymbolBinding(vanilla.WorldgenProcessorId)
 	WorldgenTemplatePool = NewSymbolBinding(vanilla.WorldgenTemplatePoolId)
 	WorldgenJigsaw       = NewSymbolBinding(nil)
