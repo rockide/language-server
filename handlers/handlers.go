@@ -57,6 +57,7 @@ var handlerList = []Handler{
 	Item,
 	Lang,
 	LootTable,
+	McFunction,
 	Recipe,
 	SpawnRule,
 	Structure,
