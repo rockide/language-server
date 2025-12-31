@@ -96,9 +96,13 @@ func (p ParameterSpec) ToString() string {
 		s = p.Literals[0]
 	}
 	if p.Optional {
-		return "[" + s + "]"
+		s = "[" + s + "]"
 	}
-	return "<" + s + ">"
+	s = "<" + s + ">"
+	if p.Kind == ParameterKindSuffixedInteger && p.Suffix != "" {
+		s += p.Suffix
+	}
+	return s
 }
 
 type NumberRange struct {
