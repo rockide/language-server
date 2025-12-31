@@ -272,7 +272,7 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 				Label:            "Item NBT Snippet...",
 				Kind:             protocol.SnippetCompletion,
 				InsertTextFormat: &snippetTextFormat,
-				InsertText:       escape(`{}`),
+				InsertText:       escape(`{$0}`),
 			})
 		case mcfunction.ParameterKindRelativeNumber:
 			addItem("~")
