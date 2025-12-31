@@ -101,7 +101,7 @@ var (
 	EntityFamily         = NewSymbolBinding(vanilla.TypeFamily)
 	FeatureId            = NewSymbolBinding(vanilla.FeatureId)
 	ItemCustomComponent  = NewSymbolBinding(nil)
-	ItemId               = NewSymbolBinding(vanilla.ItemId) // Blocks are contained within the "block" scope
+	ItemId               = NewSymbolBinding(vanilla.ItemId.Union(vanilla.BlockId)) // Blocks are contained within the "block" scope
 	ItemTag              = NewSymbolBinding(vanilla.ItemTag)
 	RecipeTag            = NewSymbolBinding(vanilla.RecipeTag)
 	WorldgenProcessor    = NewSymbolBinding(vanilla.WorldgenProcessorId)
