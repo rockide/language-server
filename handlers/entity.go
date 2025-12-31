@@ -162,6 +162,11 @@ var Entity = &JsonHandler{
 		{
 			Store: stores.EntityPropertyValue.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:entity/description/properties/*/default")},
+			Matcher: func(ctx *JsonContext) bool {
+				parent := ctx.GetParentNode()
+				propertyType := jsonc.FindNodeAtLocation(parent, jsonc.Path{"type"})
+				return propertyType != nil && propertyType.Value == "enum"
+			},
 			ScopeKey: func(ctx *JsonContext) string {
 				if id, ok := ctx.GetPath()[3].(string); ok {
 					return id
