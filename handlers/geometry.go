@@ -35,9 +35,10 @@ var Geometry = &JsonHandler{
 			},
 		},
 		{
-			Store:    stores.GeometryBone.Source,
-			Path:     []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/name")},
-			ScopeKey: _geometryGetIdentifier,
+			Store:      stores.GeometryBone.Source,
+			Path:       []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/name")},
+			FilterDiff: true,
+			ScopeKey:   _geometryGetIdentifier,
 			Source: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
 				return stores.GeometryBone.References.Get(identifier)
@@ -77,7 +78,8 @@ var Geometry = &JsonHandler{
 			Matcher: func(ctx *JsonContext) bool {
 				return _geometryGetOldIdentifier(ctx) != defaultScope
 			},
-			ScopeKey: _geometryGetOldIdentifier,
+			FilterDiff: true,
+			ScopeKey:   _geometryGetOldIdentifier,
 			Source: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
 				return stores.GeometryBone.References.Get(identifier)
