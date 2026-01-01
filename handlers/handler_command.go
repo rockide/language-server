@@ -155,7 +155,7 @@ func (h *CommandHandler) commandCompletions(editRange protocol.Range) []protocol
 	result := []protocol.CompletionItem{}
 	set := mapset.NewThreadUnsafeSet[string]()
 	for name, spec := range h.Parser.RegisteredCommands() {
-		if set.Contains(name) {
+		if set.ContainsOne(name) {
 			continue
 		}
 		set.Add(name)
@@ -187,7 +187,7 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 		return s
 	}
 	addItem := func(value string, kind ...protocol.CompletionItemKind) {
-		if set.Contains(value) {
+		if set.ContainsOne(value) {
 			return
 		}
 		set.Add(value)
@@ -290,7 +290,7 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 		}
 		addCompletions(param)
 		for _, tag := range param.Tags {
-			if tagSet.Contains(tag) {
+			if tagSet.ContainsOne(tag) {
 				continue
 			}
 			tagSet.Add(tag)
