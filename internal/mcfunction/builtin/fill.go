@@ -29,11 +29,7 @@ var Fill = &mcfunction.Spec{
 					Name: "tileName",
 					Tags: []string{mcfunction.TagBlockId},
 				},
-				{
-					Kind: mcfunction.ParameterKindMap,
-					Name: "blockStates",
-					Tags: []string{mcfunction.TagBlockState},
-				},
+				blockStates,
 				{
 					Kind:     mcfunction.ParameterKindLiteral,
 					Name:     "oldBlockHandling",
@@ -80,11 +76,7 @@ var Fill = &mcfunction.Spec{
 					Name: "tileName",
 					Tags: []string{mcfunction.TagBlockId},
 				},
-				{
-					Kind: mcfunction.ParameterKindMap,
-					Name: "blockStates",
-					Tags: []string{mcfunction.TagBlockState},
-				},
+				blockStates,
 				{
 					Kind:     mcfunction.ParameterKindLiteral,
 					Name:     "oldBlockHandling",
@@ -96,12 +88,7 @@ var Fill = &mcfunction.Spec{
 					Optional: true,
 					Tags:     []string{mcfunction.TagBlockId},
 				},
-				{
-					Kind:     mcfunction.ParameterKindMap,
-					Name:     "replaceBlockStates",
-					Optional: true,
-					Tags:     []string{mcfunction.TagBlockState},
-				},
+				blockStates,
 			},
 		},
 		{
@@ -130,12 +117,7 @@ var Fill = &mcfunction.Spec{
 					Optional: true,
 					Tags:     []string{mcfunction.TagBlockId},
 				},
-				{
-					Kind:     mcfunction.ParameterKindMap,
-					Name:     "replaceBlockStates",
-					Optional: true,
-					Tags:     []string{mcfunction.TagBlockState},
-				},
+				blockStates,
 			},
 		},
 	},

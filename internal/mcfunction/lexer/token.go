@@ -3,7 +3,7 @@ package lexer
 type TokenKind uint8
 
 const (
-	TokenEOF TokenKind = iota
+	TokenUnknown TokenKind = iota
 	TokenWhitespace
 	TokenNewline
 	TokenComment

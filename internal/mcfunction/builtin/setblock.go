@@ -17,11 +17,7 @@ var Setblock = &mcfunction.Spec{
 					Name: "tileName",
 					Tags: []string{mcfunction.TagBlockId},
 				},
-				{
-					Kind: mcfunction.ParameterKindMap,
-					Name: "blockStates",
-					Tags: []string{mcfunction.TagBlockState},
-				},
+				blockStates,
 				{
 					Kind:     mcfunction.ParameterKindLiteral,
 					Name:     "oldBlockHandling",

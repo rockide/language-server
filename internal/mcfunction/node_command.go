@@ -1,15 +1,5 @@
 package mcfunction
 
-type INodeCommand interface {
-	INode
-	CommandName() string
-	Args() []INode
-	Spec() *Spec
-	OverloadStates() []*overloadState
-	ParamSpec(index int) (ParameterSpec, bool)
-	IsValid() bool
-}
-
 type NodeCommand struct {
 	*Node
 	name           string
@@ -54,7 +44,7 @@ func (n *NodeCommand) OverloadStates() []*overloadState {
 	return n.overloadStates
 }
 
-func (n *NodeCommand) ParamSpec(index int) (ParameterSpec, bool) {
+func (n *NodeCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
 	for _, o := range n.overloadStates {
 		if !o.matched {
 			continue

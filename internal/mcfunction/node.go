@@ -20,22 +20,6 @@ const (
 	NodeKindCommandArg
 )
 
-type INode interface {
-	addChild(child INode)
-	setParent(parent INode)
-	setIndex(index int)
-
-	Kind() NodeKind
-	Range() (start, end uint32)
-	Text([]rune) string
-	PrevSibling() INode
-	NextSibling() INode
-	Parent() INode
-	Index() int
-	Children() []INode
-	IsInside(pos uint32) bool
-}
-
 type Node struct {
 	kind     NodeKind
 	parent   INode
