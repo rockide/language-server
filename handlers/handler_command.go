@@ -16,6 +16,11 @@ import (
 	"github.com/rockide/language-server/stores"
 )
 
+// TODO:
+// JSON Parse
+// JSON Defintions
+// JSON Rename
+
 type CommandHandler struct {
 	Pattern      shared.Pattern
 	Parser       *mcfunction.Parser
@@ -37,15 +42,15 @@ func (h *CommandHandler) Parse(uri protocol.DocumentURI) error {
 	content := document.GetContent()
 	root, _ := h.Parser.Parse(content)
 	mcfunction.WalkNodeTree(root, func(i mcfunction.INode) bool {
-		arg, ok := i.(mcfunction.INodeArg)
+		nodeSpec, ok := i.(mcfunction.NodeParam)
 		if !ok {
 			return true
 		}
-		param, ok := arg.ArgParamSpec()
+		paramSpec, ok := nodeSpec.ParamSpec()
 		if !ok {
 			return true
 		}
-		for _, tag := range param.Tags {
+		for _, tag := range paramSpec.Tags {
 			entry, ok := commandEntries[tag]
 			if !ok || entry.Store == nil {
 				continue
@@ -57,7 +62,7 @@ func (h *CommandHandler) Parse(uri protocol.DocumentURI) error {
 			s, e := i.Range()
 			entry.Store.Insert(scope, core.Symbol{
 				URI:   uri,
-				Value: arg.Text(content),
+				Value: i.Text(content),
 				Range: &protocol.Range{
 					Start: document.PositionAt(s),
 					End:   document.PositionAt(e),
@@ -82,11 +87,11 @@ func (h *CommandHandler) Delete(uri protocol.DocumentURI) {
 
 func (h *CommandHandler) Completions(document *textdocument.TextDocument, position protocol.Position) []protocol.CompletionItem {
 	result := []protocol.CompletionItem{}
-	context := h.parseLine(document, position)
-	root := context.Root
-	rOffset := context.RelativeOffset
-	startOffset := context.StartOffset
-	line := context.Content
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
+	startOffset := parsed.StartOffset
+	line := parsed.Content
 
 	node := mcfunction.NodeAt(root, rOffset)
 	rStart, rEnd := node.Range()
@@ -107,20 +112,8 @@ func (h *CommandHandler) Completions(document *textdocument.TextDocument, positi
 		arg, ok := node.(mcfunction.INodeArg)
 		if ok {
 			switch arg.ParamKind() {
-			case mcfunction.ParameterKindSelectorArg:
-				for k := range mcfunction.SelectorArg {
-					result = append(result, protocol.CompletionItem{
-						Label: k,
-						Kind:  protocol.FieldCompletion,
-						TextEdit: &protocol.Or_CompletionItem_textEdit{
-							Value: protocol.TextEdit{
-								NewText: k,
-								Range:   cursorRange,
-							},
-						},
-					})
-				}
-				return result
+			case mcfunction.ParameterKindMap, mcfunction.ParameterKindMapPair, mcfunction.ParameterKindSelectorArg, mcfunction.ParameterKindMapJSON:
+				return h.mapCompletions(arg, cursorRange, nodeRange)
 			case mcfunction.ParameterKindRawMessage:
 				doc := document.CreateVirtualDocument(nodeRange)
 				rawMessage.CommandHandler = h
@@ -174,11 +167,11 @@ func (h *CommandHandler) commandCompletions(editRange protocol.Range) []protocol
 	return result
 }
 
-func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRange protocol.Range) []protocol.CompletionItem {
+func (h *CommandHandler) innerCompletions(node mcfunction.INodeCommand, paramSpec *mcfunction.ParameterSpec, editRange protocol.Range) []protocol.CompletionItem {
 	result := []protocol.CompletionItem{}
 	set := mapset.NewThreadUnsafeSet[string]()
 	escape := func(s string) string {
-		if strings.ContainsAny(s, " /.") {
+		if strings.ContainsAny(s, " /") {
 			s = `"` + s + `"`
 		}
 		if h.EscapeQuotes {
@@ -206,8 +199,8 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 			},
 		})
 	}
-	var addCompletions func(param mcfunction.ParameterSpec)
-	addCompletions = func(param mcfunction.ParameterSpec) {
+	var paramCompletions func(param *mcfunction.ParameterSpec)
+	paramCompletions = func(param *mcfunction.ParameterSpec) {
 		if len(param.Literals) > 0 {
 			for _, lit := range param.Literals {
 				addItem(escape(lit), protocol.KeywordCompletion)
@@ -232,7 +225,14 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 				Label:            "[]",
 				Kind:             protocol.SnippetCompletion,
 				InsertTextFormat: &snippetTextFormat,
-				InsertText:       escape("[$1=$0]"),
+				InsertText:       "[$1=$0]",
+			})
+		case mcfunction.ParameterKindMapJSON, mcfunction.ParameterKindJSON:
+			result = append(result, protocol.CompletionItem{
+				Label:            "{}",
+				Kind:             protocol.SnippetCompletion,
+				InsertTextFormat: &snippetTextFormat,
+				InsertText:       "{$0}",
 			})
 		case mcfunction.ParameterKindVector2:
 			addItem("~~")
@@ -253,8 +253,10 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 			addItem("*")
 			addItem("0")
 		case mcfunction.ParameterKindChainedCommand:
-			for _, o := range node.OverloadStates() {
-				addCompletions(o.Parameters()[0])
+			if node != nil {
+				for _, o := range node.OverloadStates() {
+					paramCompletions(&o.Parameters()[0])
+				}
 			}
 		case mcfunction.ParameterKindCommand:
 			for name := range h.Parser.RegisteredCommands() {
@@ -280,15 +282,7 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 		}
 	}
 	tagSet := mapset.NewThreadUnsafeSet[string]()
-	for _, o := range node.OverloadStates() {
-		if !o.Matched() {
-			continue
-		}
-		param, ok := o.Peek()
-		if !ok {
-			continue
-		}
-		addCompletions(param)
+	tagCompletions := func(param *mcfunction.ParameterSpec) {
 		for _, tag := range param.Tags {
 			if tagSet.ContainsOne(tag) {
 				continue
@@ -315,34 +309,103 @@ func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRang
 			}
 		}
 	}
+	if node != nil {
+		for _, o := range node.OverloadStates() {
+			if !o.Matched() {
+				continue
+			}
+			param, ok := o.Peek()
+			if !ok {
+				continue
+			}
+			paramCompletions(&param)
+			tagCompletions(&param)
+		}
+	}
+	if paramSpec != nil {
+		paramCompletions(paramSpec)
+		tagCompletions(paramSpec)
+	}
 	return result
+}
+
+func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRange protocol.Range) []protocol.CompletionItem {
+	return h.innerCompletions(node, nil, editRange)
+}
+
+func (h *CommandHandler) paramSpecCompletions(spec *mcfunction.ParameterSpec, editRange protocol.Range) []protocol.CompletionItem {
+	return h.innerCompletions(nil, spec, editRange)
+}
+
+func (h *CommandHandler) mapCompletions(node mcfunction.INodeArg, cursorRange protocol.Range, nodeRange protocol.Range) []protocol.CompletionItem {
+	keyCompletions := func(spec *mcfunction.ParameterSpec, keys []string, editRange protocol.Range) []protocol.CompletionItem {
+		var result []protocol.CompletionItem
+		for _, key := range keys {
+			result = append(result, protocol.CompletionItem{
+				Label: key,
+				Kind:  protocol.FieldCompletion,
+				TextEdit: &protocol.Or_CompletionItem_textEdit{
+					Value: protocol.TextEdit{
+						NewText: key,
+						Range:   editRange,
+					},
+				},
+			})
+		}
+		if spec != nil && spec.Kind != mcfunction.ParameterKindUnknown {
+			result = slices.Concat(result, h.paramSpecCompletions(spec, editRange))
+		}
+		return result
+	}
+	switch n := node.(type) {
+	case mcfunction.INodeArgMap:
+		spec, _ := n.MapSpec().KeySpec()
+		return keyCompletions(spec, n.MapSpec().Keys(), cursorRange)
+	case mcfunction.INodeArgPairChild:
+		kind := n.PairKind()
+		switch kind {
+		case mcfunction.PairKindKey:
+			spec, _ := n.KeySpec()
+			keys := n.Keys()
+			return keyCompletions(&spec, keys, nodeRange)
+		case mcfunction.PairKindEqual, mcfunction.PairKindValue:
+			spec, ok := n.ValueSpec()
+			if ok {
+				if kind == mcfunction.PairKindValue {
+					cursorRange = nodeRange
+				}
+				return h.paramSpecCompletions(&spec, cursorRange)
+			}
+		}
+	}
+	return []protocol.CompletionItem{}
 }
 
 func (h *CommandHandler) Definitions(document *textdocument.TextDocument, position protocol.Position) []protocol.LocationLink {
 	result := []protocol.LocationLink{}
-	context := h.parseLine(document, position)
-	root := context.Root
-	rOffset := context.RelativeOffset
-	startOffset := context.StartOffset
-	line := context.Content
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
+	startOffset := parsed.StartOffset
+	line := parsed.Content
 	if root == nil {
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	arg, ok := node.(mcfunction.INodeArg)
+	nodeSpec, ok := node.(mcfunction.NodeParam)
 	if !ok {
 		return result
 	}
-	paramSpec, ok := arg.ArgParamSpec()
+	paramSpec, ok := nodeSpec.ParamSpec()
 	if !ok {
 		return result
 	}
-	rStart, rEnd := arg.Range()
+	rStart, rEnd := node.Range()
 	nodeRange := protocol.Range{
 		Start: document.PositionAt(startOffset + rStart),
 		End:   document.PositionAt(startOffset + rEnd),
 	}
-	nodeValue := arg.Text(line)
+	nodeValue := node.Text(line)
 	if h.EscapeQuotes {
 		nodeValue = strings.Trim(nodeValue, `\"`)
 	} else {
@@ -376,29 +439,29 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 }
 
 func (h *CommandHandler) PrepareRename(document *textdocument.TextDocument, position protocol.Position) *protocol.PrepareRenamePlaceholder {
-	context := h.parseLine(document, position)
-	root := context.Root
-	rOffset := context.RelativeOffset
-	startOffset := context.StartOffset
-	line := context.Content
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
+	startOffset := parsed.StartOffset
+	line := parsed.Content
 	if root == nil {
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	arg, ok := node.(mcfunction.INodeArg)
+	nodeSpec, ok := node.(mcfunction.NodeParam)
 	if !ok {
 		return nil
 	}
-	paramSpec, ok := arg.ArgParamSpec()
+	paramSpec, ok := nodeSpec.ParamSpec()
 	if !ok {
 		return nil
 	}
-	rStart, rEnd := arg.Range()
+	rStart, rEnd := node.Range()
 	nodeRange := protocol.Range{
 		Start: document.PositionAt(startOffset + rStart),
 		End:   document.PositionAt(startOffset + rEnd),
 	}
-	nodeValue := arg.Text(line)
+	nodeValue := node.Text(line)
 	for _, tag := range paramSpec.Tags {
 		entry, ok := commandEntries[tag]
 		if !ok || entry.DisableRename {
@@ -413,23 +476,23 @@ func (h *CommandHandler) PrepareRename(document *textdocument.TextDocument, posi
 }
 
 func (h *CommandHandler) Rename(document *textdocument.TextDocument, position protocol.Position, newName string) *protocol.WorkspaceEdit {
-	context := h.parseLine(document, position)
-	root := context.Root
-	rOffset := context.RelativeOffset
-	line := context.Content
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
+	line := parsed.Content
 	if root == nil {
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	arg, ok := node.(mcfunction.INodeArg)
+	nodeSpec, ok := node.(mcfunction.NodeParam)
 	if !ok {
 		return nil
 	}
-	paramSpec, ok := arg.ArgParamSpec()
+	paramSpec, ok := nodeSpec.ParamSpec()
 	if !ok {
 		return nil
 	}
-	nodeValue := arg.Text(line)
+	nodeValue := node.Text(line)
 	// TODO: Check cross rename between unescaped and escaped strings
 	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
 	for _, tag := range paramSpec.Tags {
@@ -456,9 +519,9 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 }
 
 func (h *CommandHandler) Hover(document *textdocument.TextDocument, position protocol.Position) *protocol.Hover {
-	context := h.parseLine(document, position)
-	root := context.Root
-	rOffset := context.RelativeOffset
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
 	if root == nil {
 		return nil
 	}
@@ -485,16 +548,16 @@ func (h *CommandHandler) Hover(document *textdocument.TextDocument, position pro
 			Value: "```\n" +
 				commandNode.CommandName() +
 				"\n```\n" +
-				commandNode.Spec().Description,
+				spec.Description,
 		},
 	}
 }
 
 func (h *CommandHandler) SignatureHelp(document *textdocument.TextDocument, position protocol.Position) *protocol.SignatureHelp {
-	context := h.parseLine(document, position)
-	root := context.Root
-	rOffset := context.RelativeOffset
-	line := context.Content
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
+	line := parsed.Content
 	if root == nil {
 		return nil
 	}
@@ -557,7 +620,7 @@ func (h *CommandHandler) ComputeSemanticTokens(document *textdocument.TextDocume
 	tokens := []semtok.Token{}
 	molangRanges := []protocol.Range{}
 	isMolang := func(node mcfunction.INodeArg) bool {
-		param, ok := node.ArgParamSpec()
+		param, ok := node.ParamSpec()
 		if ok && slices.Contains(param.Tags, mcfunction.TagMolang) {
 			start, end := node.Range()
 			length := end - start
@@ -605,7 +668,7 @@ func (h *CommandHandler) ComputeSemanticTokens(document *textdocument.TextDocume
 					End:   pB,
 				})
 			} else if tokType, ok := commandParamTokenMap[n.ParamKind()]; ok {
-				spec, ok := n.ArgParamSpec()
+				spec, ok := n.ParamSpec()
 				if ok && slices.Contains(spec.Tags, mcfunction.TagExecuteChain) {
 					tokType = semtok.TokKeyword
 				}
@@ -714,12 +777,15 @@ var commandEntries = map[string]commandEntry{
 			return stores.ItemId.References.Get("block")
 		},
 	},
-	// mcfunction.TagBlockState: {
-	// 	Store: stores.BlockState.References,
-	// 	Source: func(node mcfunction.INode) []core.Symbol {
-	// 		return stores.BlockState.Source.Get()
-	// 	},
-	// },
+	mcfunction.TagBlockState: {
+		Store: stores.BlockState.References,
+		Source: func(node mcfunction.INode) []core.Symbol {
+			return stores.BlockState.Source.Get()
+		},
+		References: func(node mcfunction.INode) []core.Symbol {
+			return stores.BlockState.References.Get()
+		},
+	},
 	mcfunction.TagCameraId: {
 		Store: stores.CameraId.References,
 		Source: func(node mcfunction.INode) []core.Symbol {

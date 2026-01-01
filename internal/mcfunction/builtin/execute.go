@@ -287,11 +287,7 @@ var Execute = &mcfunction.Spec{
 					Name: "block",
 					Tags: []string{mcfunction.TagBlockId},
 				},
-				{
-					Kind: mcfunction.ParameterKindMap,
-					Name: "blockStates",
-					Tags: []string{mcfunction.TagBlockState},
-				},
+				blockStates,
 				{
 					Kind:     mcfunction.ParameterKindChainedCommand,
 					Name:     "chainedCommand",

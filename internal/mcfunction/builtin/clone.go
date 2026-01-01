@@ -63,12 +63,7 @@ var Clone = &mcfunction.Spec{
 					Name: "tileName",
 					Tags: []string{mcfunction.TagBlockId},
 				},
-				{
-					Kind:     mcfunction.ParameterKindMap,
-					Name:     "blockStates",
-					Optional: true,
-					Tags:     []string{mcfunction.TagBlockState},
-				},
+				blockStates,
 			},
 		},
 	},

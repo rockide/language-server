@@ -300,7 +300,7 @@ func isNewline(r rune) bool {
 }
 
 func isTerminateString(r rune) bool {
-	return isNewline(r) || isWhitespace(r) || isRelativeNumber(r) || r == '@' || r == '"' || r == '[' || r == '{' || r == '=' || r == ',' || r == '.' || r == '!'
+	return isNewline(r) || isWhitespace(r) || isRelativeNumber(r) || r == '@' || r == '"' || r == '[' || r == '{' || r == '=' || r == ',' || r == '!'
 }
 
 func isRelativeNumber(r rune) bool {

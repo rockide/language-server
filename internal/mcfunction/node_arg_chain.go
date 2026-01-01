@@ -69,13 +69,13 @@ func (n *NodeArgCommand) ParamKind() ParameterKind {
 	return n.paramKind
 }
 
-func (n *NodeArgCommand) ArgParamSpec() (ParameterSpec, bool) {
+func (n *NodeArgCommand) ParamSpec() (ParameterSpec, bool) {
 	commandNode, ok := n.parent.(INodeCommand)
 	if !ok {
 		return ParameterSpec{}, false
 	}
 	argIndex := n.index
-	return commandNode.ParamSpec(argIndex)
+	return commandNode.ParamSpecAt(argIndex)
 }
 
 func (n *NodeArgCommand) IsInside(pos uint32) bool {
@@ -98,7 +98,7 @@ func (n *NodeArgCommand) OverloadStates() []*overloadState {
 	return n.overloadStates
 }
 
-func (n *NodeArgCommand) ParamSpec(index int) (ParameterSpec, bool) {
+func (n *NodeArgCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
 	for _, o := range n.overloadStates {
 		if !o.matched {
 			continue
