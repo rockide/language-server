@@ -2,13 +2,13 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/internal/mcfunction"
-	"github.com/rockide/language-server/internal/mcfunction/vanilla"
+	"github.com/rockide/language-server/internal/mcfunction/builtin"
 	"github.com/rockide/language-server/shared"
 )
 
 func newCommandParser(options mcfunction.ParserOptions) *mcfunction.Parser {
 	parser := mcfunction.NewParser(options)
-	parser.RegisterCommands(vanilla.Commands...)
+	parser.RegisterCommands(builtin.Commands...)
 	return parser
 }
 
