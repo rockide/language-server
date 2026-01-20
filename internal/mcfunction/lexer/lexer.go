@@ -5,15 +5,17 @@ import (
 )
 
 type Lexer struct {
-	src   []rune
-	i     int
-	state state
+	src     []rune
+	i       int
+	state   state
+	lastPos int
 }
 
 func New(input []rune) *Lexer {
 	return &Lexer{
-		src:   input,
-		state: StateStart,
+		src:     input,
+		state:   StateStart,
+		lastPos: -1,
 	}
 }
 
@@ -39,6 +41,7 @@ func (l *Lexer) advance() rune {
 	if l.eof() {
 		return 0
 	}
+	l.lastPos = l.i
 	r := l.src[l.i]
 	l.i++
 	return r
@@ -83,13 +86,15 @@ func (l *Lexer) matchPairs(open, close rune) bool {
 	return false
 }
 
+func (l *Lexer) isInfiniteLoop() bool {
+	return l.i == l.lastPos
+}
+
 func (l *Lexer) Next() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
-		depth := -1
 		for !l.eof() {
-			depth++
-			if depth > 1000 {
-				panic("lexer: possible infinite loop detected")
+			if l.isInfiniteLoop() {
+				panic("possible infinite loop in lexer")
 			}
 			r := l.peek()
 			start := l.pos()
@@ -288,6 +293,7 @@ func (l *Lexer) Next() iter.Seq[Token] {
 func (l *Lexer) Reset(input []rune) {
 	l.src = input
 	l.i = 0
+	l.lastPos = -1
 	l.state = StateStart
 }
 
