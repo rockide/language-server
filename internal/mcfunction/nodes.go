@@ -24,6 +24,7 @@ type INodeArg interface {
 	INode
 	NodeParam
 	ParamKind() ParameterKind
+	CommandNode() INodeCommand
 }
 
 type INodeArgMap interface {

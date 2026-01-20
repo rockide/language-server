@@ -531,7 +531,7 @@ func (h *CommandHandler) Hover(document *textdocument.TextDocument, position pro
 	case mcfunction.INodeCommand:
 		commandNode = n
 	case mcfunction.INodeArg:
-		if parent, ok := n.Parent().(mcfunction.INodeCommand); ok {
+		if parent := n.CommandNode(); parent != nil && parent.IsValid() {
 			commandNode = parent
 		}
 	}
@@ -563,21 +563,18 @@ func (h *CommandHandler) SignatureHelp(document *textdocument.TextDocument, posi
 	}
 	node := mcfunction.NodeAt(root, rOffset)
 	var commandNode mcfunction.INodeCommand
-	flag := false
-REPARSE:
-	rStart, _ := node.Range()
 	switch n := node.(type) {
 	case mcfunction.INodeCommand:
 		commandNode = n
 	case mcfunction.INodeArg:
-		if parent, ok := n.Parent().(mcfunction.INodeCommand); ok {
-			if parent.IsValid() {
-				commandNode = parent
-			} else if !flag {
-				root, _ := h.Parser.Parse(line[:rStart])
-				node = mcfunction.NodeAt(root, rStart)
-				flag = true
-				goto REPARSE
+		if parent := n.CommandNode(); parent != nil && parent.IsValid() {
+			commandNode = parent
+		} else {
+			s, _ := n.Range()
+			root, _ := h.Parser.Parse(line[:s])
+			node = mcfunction.NodeAt(root, s)
+			if n, ok := node.(mcfunction.INodeCommand); ok {
+				commandNode = n
 			}
 		}
 	}

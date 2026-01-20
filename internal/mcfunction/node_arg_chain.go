@@ -118,3 +118,7 @@ func (n *NodeArgCommand) IsValid() bool {
 	}
 	return false
 }
+
+func (n *NodeArgCommand) CommandNode() INodeCommand {
+	return n
+}
