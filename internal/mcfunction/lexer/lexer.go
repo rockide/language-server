@@ -242,6 +242,7 @@ func (l *Lexer) Next() iter.Seq[Token] {
 				}
 				if isDigit(r) {
 					l.advanceWhile(isDigit)
+					r = l.peek()
 				}
 				if r == '.' {
 					l.advance() // consume '.'
