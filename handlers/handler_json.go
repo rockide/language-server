@@ -59,6 +59,10 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 	if err != nil {
 		return err
 	}
+	return j.ParseDocument(document)
+}
+
+func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 	root, _ := jsonc.ParseTree(document.GetText(), nil)
 	for _, entry := range j.Entries {
 		if entry.Store == nil {
@@ -71,7 +75,7 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 					continue
 				}
 				ctx := JsonContext{
-					URI:       uri,
+					URI:       document.URI,
 					NodeValue: nodeValue,
 					GetPath: func() jsonc.Path {
 						return jsonc.GetNodePath(node)
@@ -96,7 +100,7 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 				}
 				entry.Store.Insert(scope, core.Symbol{
 					Value: nodeValue,
-					URI:   uri,
+					URI:   document.URI,
 					Range: &protocol.Range{
 						Start: document.PositionAt(node.Offset + 1),
 						End:   document.PositionAt(node.Offset + node.Length - 1),
