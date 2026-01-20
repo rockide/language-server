@@ -81,3 +81,11 @@ func (n *NodeArg) ParamSpec() (ParameterSpec, bool) {
 	argIndex := n.index
 	return commandNode.ParamSpecAt(argIndex)
 }
+
+func (n *NodeArg) CommandNode() INodeCommand {
+	commandNode, ok := n.parent.(INodeCommand)
+	if !ok {
+		return nil
+	}
+	return commandNode
+}
