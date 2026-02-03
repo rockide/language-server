@@ -74,7 +74,7 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "armor_color_slot",
-		Signature:   "(slotIndex: number): unknown",
+		Signature:   "(slotIndex: number): number",
 		Description: "Takes the armor slot index as a parameter, and returns the color of the armor in the requested slot. The valid values for the armor slot index are 0 (head), 1 (chest), 2 (legs), 3 (feet) and 4 (body).",
 	},
 	{
@@ -84,12 +84,12 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "armor_material_slot",
-		Signature:   "(slotIndex: number): unknown",
+		Signature:   "(slotIndex: number): number",
 		Description: "Takes the armor slot index as a parameter, and returns the armor material type in the requested armor slot. The valid values for the armor slot index are 0 (head), 1 (chest), 2 (legs) and 3 (feet).",
 	},
 	{
 		Name:        "armor_texture_slot",
-		Signature:   "(slotIndex: number): unknown",
+		Signature:   "(slotIndex: number): number",
 		Description: "Takes the armor slot index as a parameter, and returns the texture type of the requested slot. The valid values for the armor slot index are 0 (head), 1 (chest), 2 (legs), 3 (feet) and 4 (body).",
 	},
 	{
@@ -160,7 +160,7 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "bone_orientation_matrix",
-		Signature:   "(bone: string): unknown",
+		Signature:   "(bone: string): { min: vector3, max: vector3 }",
 		Description: "Takes the name of the bone as an argument. Returns the bone orientation (as a matrix) of the desired bone provided it exists in the queryable geometry of the mob, else this returns the identity matrix and throws a content error.",
 	},
 	{
@@ -403,7 +403,7 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "get_locator_offset",
-		Signature:   ": unknown", // TODO: undocumented
+		Signature:   "(locator: string, axis: number): number",
 		Description: "Gets specified axis of the specified locator offset.",
 	},
 	{
@@ -419,7 +419,7 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "get_root_locator_offset",
-		Signature:   ": unknown", // TODO: undocumented
+		Signature:   "(locator: string, axis: number): number",
 		Description: "Gets specified axis of the specified locator offset of the root model.",
 	},
 	{
@@ -550,7 +550,7 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "heightmap",
-		Signature:   "(x: number, z: number): number", // TODO: undocumented
+		Signature:   "(x: number, z: number): number",
 		Description: "Queries Height Map",
 	},
 	{
