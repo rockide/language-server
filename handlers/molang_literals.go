@@ -4,61 +4,6 @@ import (
 	"github.com/rockide/language-server/stores"
 )
 
-var biomeTags = [...]string{
-	"animal",
-	"bamboo",
-	"beach",
-	"birch",
-	"cold",
-	"deep",
-	"desert",
-	"edge",
-	"extreme_hills",
-	"flower_forest",
-	"frozen",
-	"hills",
-	"ice",
-	"ice_plains",
-	"jungle",
-	"forest",
-	"lukewarm",
-	"mangrove_swamp",
-	"mega",
-	"mesa",
-	"monster",
-	"mooshroom_island",
-	"mountain",
-	"mutated",
-	"nether",
-	"no_legacy_worldgen",
-	"ocean",
-	"overworld",
-	"plains",
-	"plateau",
-	"savanna",
-	"swamp",
-	"rare",
-	"river",
-	"roofed",
-	"shore",
-	"stone",
-	"taiga",
-	"warm",
-	"netherwart_forest",
-	"crimson_forest",
-	"warped_forest",
-	"soulsand_valley",
-	"nether_wastes",
-	"basalt_deltas",
-	"spawn_few_zombified_piglins",
-	"spawn_piglin",
-	"spawn_endermen",
-	"spawn_ghast",
-	"spawn_magma_cubes",
-	"spawn_many_magma_cubes",
-	"sunflower_plains",
-}
-
 var equipmentSlots = [...]string{
 	"slot.weapon.mainhand",
 	"slot.weapon.offhand",
@@ -86,9 +31,6 @@ type molangValue struct {
 }
 
 var molangTypes = map[string]func() molangValue{
-	"BiomeTag": func() molangValue {
-		return molangValue{literals: biomeTags[:]}
-	},
 	"EquipmentSlot": func() molangValue {
 		return molangValue{literals: equipmentSlots[:]}
 	},
@@ -97,6 +39,12 @@ var molangTypes = map[string]func() molangValue{
 	},
 	"InputMode": func() molangValue {
 		return molangValue{literals: inputModes[:]}
+	},
+	"BiomeId": func() molangValue {
+		return molangValue{bindings: []*stores.SymbolBinding{stores.BiomeId}}
+	},
+	"BiomeTag": func() molangValue {
+		return molangValue{bindings: []*stores.SymbolBinding{stores.BiomeTag}}
 	},
 	"BlockTag": func() molangValue {
 		return molangValue{bindings: []*stores.SymbolBinding{stores.BlockTag}}

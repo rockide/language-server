@@ -98,6 +98,11 @@ var molangQueries = []Method{
 		Description: "Returns the time in *seconds* of the average frame time over the last 'n' frames. If an argument is passed, it is assumed to be the number of frames in the past that you wish to query. 'query.average_frame_time' (or the equivalent 'query.average_frame_time(0)') will return the frame time of the frame before the current one. 'query.average_frame_time(1)' will return the average frame time of the previous two frames. Currently we store the history of the last 30 frames, although note that this may change in the future. Asking for more frames will result in only sampling the number of frames stored.",
 	},
 	{
+		Name:        "base_swing_duration",
+		Signature:   ": number",
+		Description: "Returns the duration of the mob's swing/attack animation, determined by the carried item and unmodified by effects applied on the mob. To access the swing/attack animation progress, use \"variable.attack_time\" instead.",
+	},
+	{
 		Name:        "block_face",
 		Signature:   ": number",
 		Description: "Returns the block face for this (only valid for certain triggers such as placing blocks, or interacting with block) (Down=0.0, Up=1.0, North=2.0, South=3.0, West=4.0, East=5.0, Undefined=6.0).",
@@ -319,6 +324,21 @@ var molangQueries = []Method{
 		Name:        "effect_particle_count",
 		Signature:   ": number",
 		Description: "Returns the total number of active particles of the callee's particle effect type.",
+	},
+	{
+		Name:        "entity_biome_has_all_tags",
+		Signature:   "(...tags: BiomeTag[]): boolean",
+		Description: "Compares the biome the entity is standing in with one or more tag names, and returns either 0 or 1 based on if all of the tag names match. Only supported in resource packs (client-side).",
+	},
+	{
+		Name:        "entity_biome_has_any_identifier",
+		Signature:   "(...identifiers: BiomeId[]): boolean",
+		Description: "Compares the biome the entity is standing in with one or more identifier names, and returns either 0 or 1 based on if any of the identifier names match. Only supported in resource packs (client-side).",
+	},
+	{
+		Name:        "entity_biome_has_any_tags",
+		Signature:   "(...tags: BiomeTag[]): boolean",
+		Description: "Compares the biome the entity is standing in with one or more tag names, and returns either 0 or 1 based on if any of the tag names match. Only supported in resource packs (client-side).",
 	},
 	{
 		Name:        "equipment_count",
@@ -1203,6 +1223,11 @@ var molangQueries = []Method{
 		Description: "Returns the current walk speed of the entity modified by status flags such as is_baby or on_fire.",
 	},
 	{
+		Name:        "modified_swing_duration",
+		Signature:   ": number",
+		Description: "Returns the duration of the mob's swing/attack animation, determined by the carried item and modified by effects applied on the mob. To access the swing/attack animation progress, use \"variable.attack_time\" instead.",
+	},
+	{
 		Name:        "moon_brightness",
 		Signature:   ": number",
 		Description: "Returns the brightness of the moon (FULL_MOON=1.0, WANING_GIBBOUS=0.75, FIRST_QUARTER=0.5, WANING_CRESCENT=0.25, NEW_MOON=0.0, WAXING_CRESCENT=0.25, LAST_QUARTER=0.5, WAXING_GIBBOUS=0.75).",
@@ -1593,6 +1618,156 @@ var molangMath = []Method{
 		Description: "returns the sum of 'num' random integer numbers, each with a value from low to high`. Note: the generated random numbers are integers like normal dice.",
 	},
 	{
+		Name:        "ease_in_back",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, overshooting backward before accelerating into the end",
+	},
+	{
+		Name:        "ease_in_bounce",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting with bounce oscillations and settling into the end",
+	},
+	{
+		Name:        "ease_in_circ",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow and accelerating along a circular curve toward the end",
+	},
+	{
+		Name:        "ease_in_cubic",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow and accelerating rapidly toward the end",
+	},
+	{
+		Name:        "ease_in_elastic",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting with elastic oscillations before accelerating into the end",
+	},
+	{
+		Name:        "ease_in_expo",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow and accelerating extremely rapidly toward the end",
+	},
+	{
+		Name:        "ease_in_out_back",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, overshooting at both start and end, with smoother change in the middle",
+	},
+	{
+		Name:        "ease_in_out_bounce",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting and ending with bounce oscillations, smoother in the middle",
+	},
+	{
+		Name:        "ease_in_out_circ",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting and ending slow, with circular acceleration and deceleration in the middle",
+	},
+	{
+		Name:        "ease_in_out_cubic",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow, accelerating rapidly in the middle, then slowing again at the end",
+	},
+	{
+		Name:        "ease_in_out_elastic",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, oscillating elastically at both start and end, with stable change in the middle",
+	},
+	{
+		Name:        "ease_in_out_expo",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting and ending slow, with extremely rapid change in the middle",
+	},
+	{
+		Name:        "ease_in_out_quad",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow, accelerating in the middle, then slowing again at the end",
+	},
+	{
+		Name:        "ease_in_out_quart",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow, accelerating very rapidly in the middle, then slowing again at the end",
+	},
+	{
+		Name:        "ease_in_out_quint",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow, accelerating extremely rapidly in the middle, then slowing again at the end",
+	},
+	{
+		Name:        "ease_in_out_sine",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting and ending slow, with smoother change in the middle",
+	},
+	{
+		Name:        "ease_in_quad",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow and accelerating toward the end",
+	},
+	{
+		Name:        "ease_in_quart",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow and accelerating very rapidly toward the end",
+	},
+	{
+		Name:        "ease_in_quint",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow and accelerating extremely rapidly toward the end",
+	},
+	{
+		Name:        "ease_in_sine",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting slow and accelerating smoothly toward the end",
+	},
+	{
+		Name:        "ease_out_back",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, overshooting past the end before settling into it",
+	},
+	{
+		Name:        "ease_out_bounce",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, approaching the end with bounce oscillations that diminish over time",
+	},
+	{
+		Name:        "ease_out_circ",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting fast and decelerating along a circular curve toward the end",
+	},
+	{
+		Name:        "ease_out_cubic",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting fast and decelerating rapidly toward the end",
+	},
+	{
+		Name:        "ease_out_elastic",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, overshooting the end with elastic oscillations before settling",
+	},
+	{
+		Name:        "ease_out_expo",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting extremely fast and decelerating gradually toward the end",
+	},
+	{
+		Name:        "ease_out_quad",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting fast and decelerating toward the end",
+	},
+	{
+		Name:        "ease_out_quart",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting fast and decelerating very rapidly toward the end",
+	},
+	{
+		Name:        "ease_out_quint",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting fast and decelerating extremely rapidly toward the end",
+	},
+	{
+		Name:        "ease_out_sine",
+		Signature:   "(start: number, end: number, 0_to_1: number): number",
+		Description: "Output goes from start to end via 0_to_1, starting fast and decelerating smoothly toward the end",
+	},
+	{
 		Name:        "exp",
 		Signature:   "(value: number): number",
 		Description: "Calculates e to the value'th power",
@@ -1606,6 +1781,11 @@ var molangMath = []Method{
 		Name:        "hermite_blend",
 		Signature:   "(value: number): number",
 		Description: "Useful for simple smooth curve interpolation using one of the Hermite Basis functions: `3t^2 - 2t^3`. Note that while any valid float is a valid input, this function works best in the range [0,1].",
+	},
+	{
+		Name:        "inverse_lerp",
+		Signature:   "(start: number, end: number, value: number): number",
+		Description: "Returns the normalized progress between start and end given value",
 	},
 	{
 		Name:        "lerp",
