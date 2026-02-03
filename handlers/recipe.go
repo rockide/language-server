@@ -16,8 +16,10 @@ var Recipe = &JsonHandler{
 				shared.JsonValue("minecraft:recipe_furnace/output"),
 				shared.JsonValue("minecraft:recipe_shaped/result/item"),
 				shared.JsonValue("minecraft:recipe_shaped/key/*/item"),
+				shared.JsonValue("minecraft:recipe_shaped/unlock/*/item"),
 				shared.JsonValue("minecraft:recipe_shapeless/result/item"),
 				shared.JsonValue("minecraft:recipe_shapeless/ingredients/*/item"),
+				shared.JsonValue("minecraft:recipe_shapeless/unlock/*/item"),
 				shared.JsonValue("minecraft:recipe_brewing_mix/input"),
 				shared.JsonValue("minecraft:recipe_brewing_mix/reagent"),
 				shared.JsonValue("minecraft:recipe_brewing_mix/output"),
@@ -54,7 +56,9 @@ var Recipe = &JsonHandler{
 			Store: stores.ItemTag.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:recipe_shaped/key/*/tag"),
+				shared.JsonValue("minecraft:recipe_shaped/unlock/*/tag"),
 				shared.JsonValue("minecraft:recipe_shapeless/ingredients/*/tag"),
+				shared.JsonValue("minecraft:recipe_shapeless/unlock/*/tag"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemTag.Source.Get()
