@@ -99,6 +99,22 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 					},
 				})
 			}
+			for value := range binding.Source.VanillaData.Iter() {
+				if set.ContainsOne(value) {
+					continue
+				}
+				set.Add(value)
+				res = append(res, protocol.CompletionItem{
+					Kind:  protocol.ValueCompletion,
+					Label: value,
+					TextEdit: &protocol.Or_CompletionItem_textEdit{
+						Value: protocol.TextEdit{
+							NewText: value,
+							Range:   editRange,
+						},
+					},
+				})
+			}
 		}
 		return res
 	case molang.KindPrefix, molang.KindUnknown:
