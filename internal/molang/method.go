@@ -413,6 +413,11 @@ var molangQueries = []Method{
 		Deprecated:  true,
 	},
 	{
+		Name:        "get_pack_setting",
+		Signature:   "(sliderName: string): number",
+		Description: "Returns value of Pack Setting slider, parameter is name of slider. Available on the Client (Resource Packs) only.",
+	},
+	{
 		Name:        "get_root_locator_offset",
 		Signature:   ": unknown", // TODO: undocumented
 		Description: "Gets specified axis of the specified locator offset of the root model.",
@@ -901,6 +906,16 @@ var molangQueries = []Method{
 		Description: "Takes one or more arguments. Returns whether the root actor identifier is any of the specified strings. A preferred query to query.owner_identifier, as it can be adjusted by Mojang to avoid breaking content if names are changed.",
 	},
 	{
+		Name:        "is_pack_setting_enabled",
+		Signature:   "(toggleName: string): boolean",
+		Description: "Returns 1.0 if the Pack Setting toggle is enabled, parameter is name of toggle. Available on the Client (Resource Packs) only.",
+	},
+	{
+		Name:        "is_pack_setting_selected",
+		Signature:   "(dropdownName: string, selection: string): boolean",
+		Description: "Returns 1.0 if the Pack Setting dropdown (first parameter) matches the string value of the second parameter (selection). Available on the Client (Resource Packs) only.",
+	},
+	{
 		Name:        "is_persona_or_premium_skin",
 		Signature:   ": boolean",
 		Description: "Returns 1.0 if the player has a persona or premium skin, else it returns 0.0.",
@@ -1121,6 +1136,26 @@ var molangQueries = []Method{
 		Name:        "key_frame_lerp_time",
 		Signature:   ": number",
 		Description: "Returns the ratio between the previous and next key frames.",
+	},
+	{
+		Name:        "kinetic_weapon_damage_duration",
+		Signature:   ": number",
+		Description: "Returns the \"max_duration\" value of \"damage_conditions\" from the main-hand item's \"minecraft:kinetic_weapon\" component, or 0 if the component is not present",
+	},
+	{
+		Name:        "kinetic_weapon_delay",
+		Signature:   ": number",
+		Description: "Returns the \"delay\" value from the main-hand item's \"minecraft:kinetic_weapon\" component, or 0 if the component is not present",
+	},
+	{
+		Name:        "kinetic_weapon_dismount_duration",
+		Signature:   ": number",
+		Description: "Returns the \"max_duration\" value of \"dismount_conditions\" from the main-hand item's \"minecraft:kinetic_weapon\" component, or 0 if the component is not present",
+	},
+	{
+		Name:        "kinetic_weapon_knockback_duration",
+		Signature:   ": number",
+		Description: "Returns the \"max_duration\" value of \"knockback_conditions\" from the main-hand item's \"minecraft:kinetic_weapon\" component, or 0 if the component is not present",
 	},
 	{
 		Name:        "last_frame_time",
@@ -1478,6 +1513,11 @@ var molangQueries = []Method{
 		Name:        "texture_frame_index",
 		Signature:   ": number",
 		Description: "Returns the icon index of the experience orb.",
+	},
+	{
+		Name:        "ticks_since_last_kinetic_weapon_hit",
+		Signature:   ": number",
+		Description: "Returns the number of ticks elapsed since the user last hit something while using a kinetic weapon. Returns -1.0 if no kinetic weapon is being used or if nothing has been hit yet. Hits that occur while the user is unloaded are not counted.",
 	},
 	{
 		Name:        "time_of_day",
