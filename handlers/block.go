@@ -214,6 +214,7 @@ var Block = &JsonHandler{
 	MolangLocations: []shared.JsonPath{
 		shared.JsonValue("minecraft:block/components/minecraft:destructible_by_mining/item_specific_speeds/*/item/tags"),
 		shared.JsonValue("minecraft:block/components/minecraft:geometry/bone_visibility/*"),
+		shared.JsonValue("minecraft:block/components/minecraft:item_visual/geometry/bone_visibility/*"),
 		shared.JsonValue("minecraft:block/components/minecraft:placement_filter/conditions/*/block_filter/*/tags"),
 		shared.JsonValue("minecraft:block/permutations/*/components/minecraft:destructible_by_mining/item_specific_speeds/*/item/tags"),
 		shared.JsonValue("minecraft:block/permutations/*/components/minecraft:geometry/bone_visibility/*"),

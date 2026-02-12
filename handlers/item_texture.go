@@ -23,6 +23,8 @@ var ItemTexture = &JsonHandler{
 		{
 			Path: []shared.JsonPath{
 				shared.JsonValue("texture_data/*/textures"),
+				shared.JsonValue("texture_data/*/textures/path"),
+				shared.JsonValue("texture_data/*/textures/*"),
 				shared.JsonValue("texture_data/*/textures/*/path"),
 			},
 			DisableRename: true,

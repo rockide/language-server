@@ -21,7 +21,14 @@ var TerrainTexture = &JsonHandler{
 			},
 		},
 		{
-			Path:          []shared.JsonPath{shared.JsonValue("texture_data/*/textures")},
+			Path: []shared.JsonPath{
+				shared.JsonValue("texture_data/*/textures"),
+				shared.JsonValue("texture_data/*/textures/path"),
+				shared.JsonValue("texture_data/*/textures/variations/*/path"),
+				shared.JsonValue("texture_data/*/textures/*"),
+				shared.JsonValue("texture_data/*/textures/*/path"),
+				shared.JsonValue("texture_data/*/textures/*/variations/*/path"),
+			},
 			DisableRename: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
