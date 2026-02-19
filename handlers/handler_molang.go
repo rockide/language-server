@@ -244,8 +244,6 @@ func (m *MolangHandler) Hover(document *textdocument.TextDocument, position prot
 		return nil
 	}
 	var prefix molang.Token
-	var method molang.Method
-	var ok bool
 	token := parser.Tokens[index]
 	switch token.Kind {
 	case molang.KindPrefix:
@@ -253,16 +251,16 @@ func (m *MolangHandler) Hover(document *textdocument.TextDocument, position prot
 			return nil
 		}
 		prefix = token
-		method, ok = molang.GetMethod(prefix.Value, parser.Tokens[index+1].Value)
+		token = parser.Tokens[index+1]
 	case molang.KindMethod:
 		if index == 0 {
 			return nil
 		}
 		prefix = parser.Tokens[index-1]
-		method, ok = molang.GetMethod(prefix.Value, parser.Tokens[index].Value)
 	default:
 		return nil
 	}
+	method, ok := molang.GetMethod(prefix.Value, token.Value)
 	if !ok {
 		return nil
 	}
@@ -273,6 +271,10 @@ func (m *MolangHandler) Hover(document *textdocument.TextDocument, position prot
 				prefix.Value + "." + method.Name + string(method.Signature) +
 				"\n```\n" +
 				method.Description,
+		},
+		Range: protocol.Range{
+			Start: document.PositionAt(prefix.Offset),
+			End:   document.PositionAt(token.Offset + token.Length),
 		},
 	}
 }
