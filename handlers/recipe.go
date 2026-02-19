@@ -10,6 +10,19 @@ var Recipe = &JsonHandler{
 	Pattern: shared.RecipeGlob,
 	Entries: []JsonEntry{
 		{
+			Store: stores.RecipeId.Source,
+			Path: []shared.JsonPath{
+				shared.JsonValue("minecraft:recipe_shaped/description/identifier"),
+				shared.JsonValue("minecraft:recipe_shapeless/description/identifier"),
+			},
+			Source: func(ctx *JsonContext) []core.Symbol {
+				return stores.RecipeId.References.Get()
+			},
+			References: func(ctx *JsonContext) []core.Symbol {
+				return stores.RecipeId.Source.Get()
+			},
+		},
+		{
 			Store: stores.ItemId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:recipe_furnace/input"),

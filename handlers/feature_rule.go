@@ -11,6 +11,16 @@ var FeatureRule = &JsonHandler{
 	Pattern: shared.FeatureRuleGlob,
 	Entries: []JsonEntry{
 		{
+			Store: stores.FeatureRuleId.Source,
+			Path:  []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/description/identifier")},
+			Source: func(ctx *JsonContext) []core.Symbol {
+				return stores.FeatureRuleId.References.Get()
+			},
+			References: func(ctx *JsonContext) []core.Symbol {
+				return stores.FeatureRuleId.Source.Get()
+			},
+		},
+		{
 			Store: stores.FeatureId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/description/places_feature")},
 			Source: func(ctx *JsonContext) []core.Symbol {
