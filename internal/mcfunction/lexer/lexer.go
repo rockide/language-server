@@ -116,7 +116,16 @@ func (l *Lexer) Next() iter.Seq[Token] {
 				l.state = StateStart
 				continue
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-				l.state = StateNumber
+				// checks for ident start with digit
+				n := 1
+				for isDigit(l.peekN(n)) {
+					n++
+				}
+				if l.peekN(n) == '_' {
+					l.state = StateString
+				} else {
+					l.state = StateNumber
+				}
 			case '-':
 				if l.i+1 < len(l.src) && isDigit(l.src[l.i+1]) {
 					l.state = StateNegativeNumber
@@ -191,7 +200,7 @@ func (l *Lexer) Next() iter.Seq[Token] {
 						continue
 					}
 				} else {
-					l.advanceWhile(func(r rune) bool { return !isTerminateString(r) })
+					l.advanceWhile(func(r rune) bool { return isIdent(r) })
 					if !yield(l.emit(TokenString, start)) {
 						return
 					}
@@ -306,12 +315,8 @@ func isNewline(r rune) bool {
 	return r == '\n'
 }
 
-func isTerminateString(r rune) bool {
-	return isNewline(r) || isWhitespace(r) || isRelativeNumber(r) || r == '@' || r == '"' || r == '[' || r == '{' || r == '=' || r == ',' || r == '!'
-}
-
-func isRelativeNumber(r rune) bool {
-	return r == '~' || r == '^'
+func isIdent(r rune) bool {
+	return isLetter(r) || isDigit(r) || r == '_' || r == '-' || r == ':'
 }
 
 func isDigit(r rune) bool {
