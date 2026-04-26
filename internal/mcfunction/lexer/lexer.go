@@ -115,6 +115,13 @@ func (l *Lexer) Next() iter.Seq[Token] {
 				}
 				l.state = StateStart
 				continue
+			case '/':
+				l.advance()
+				if !yield(l.emit(TokenString, start)) {
+					return
+				}
+				continue
+
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 				// checks for ident start with digit
 				n := 1
