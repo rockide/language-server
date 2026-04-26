@@ -105,9 +105,13 @@ func (h *CommandHandler) Completions(document *textdocument.TextDocument, positi
 	}
 	switch node.Kind() {
 	case mcfunction.NodeKindFile:
-		result = h.commandCompletions(cursorRange)
+		result = h.commandCompletions(cursorRange, "")
 	case mcfunction.NodeKindCommandLit:
-		result = h.commandCompletions(nodeRange)
+		prefix := ""
+		if node.Text(line)[0] == '/' {
+			prefix = "/"
+		}
+		result = h.commandCompletions(nodeRange, prefix)
 	case mcfunction.NodeKindCommandArg:
 		arg, ok := node.(mcfunction.INodeArg)
 		if ok {
@@ -144,7 +148,7 @@ func (h *CommandHandler) Completions(document *textdocument.TextDocument, positi
 	return result
 }
 
-func (h *CommandHandler) commandCompletions(editRange protocol.Range) []protocol.CompletionItem {
+func (h *CommandHandler) commandCompletions(editRange protocol.Range, prefix string) []protocol.CompletionItem {
 	result := []protocol.CompletionItem{}
 	set := mapset.NewThreadUnsafeSet[string]()
 	for name, spec := range h.Parser.RegisteredCommands() {
@@ -152,13 +156,14 @@ func (h *CommandHandler) commandCompletions(editRange protocol.Range) []protocol
 			continue
 		}
 		set.Add(name)
+		value := prefix + name
 		result = append(result, protocol.CompletionItem{
-			Label:  name,
+			Label:  value,
 			Detail: spec.Description,
 			Kind:   protocol.MethodCompletion,
 			TextEdit: &protocol.Or_CompletionItem_textEdit{
 				Value: protocol.TextEdit{
-					NewText: name,
+					NewText: value,
 					Range:   editRange,
 				},
 			},
@@ -637,6 +642,15 @@ func (h *CommandHandler) ComputeSemanticTokens(document *textdocument.TextDocume
 		switch n := i.(type) {
 		case mcfunction.INodeCommand:
 			if p, ok := i.(mcfunction.INodeArg); n.Kind() != mcfunction.NodeKindCommandArg || (ok && p.ParamKind() == mcfunction.ParameterKindCommand) {
+				if start < uint32(len(content)) && content[start] == '/' {
+					tokens = append(tokens, semtok.Token{
+						Type:  semtok.TokOperator,
+						Line:  pA.Line,
+						Start: pA.Character,
+						Len:   1,
+					})
+					pA.Character += 1
+				}
 				tokens = append(tokens, semtok.Token{
 					Type:  semtok.TokNamespace,
 					Line:  pA.Line,

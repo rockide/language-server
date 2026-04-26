@@ -82,8 +82,16 @@ func (p *Parser) Parse(input []rune) (INode, error) {
 }
 
 func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec, options ParserOptions, eol uint32) *NodeCommand {
+	startIndex := 1
 	first := tokens[0]
 	commandInput := first.Text(input)
+	if len(commandInput) > 0 && commandInput[0] == '/' {
+		if len(tokens) > 1 {
+			first = tokens[1]
+			commandInput = first.Text(input)
+			startIndex = 2
+		}
+	}
 	spec, ok := commands[commandInput]
 	node := &NodeCommand{
 		Node: &Node{
@@ -93,7 +101,7 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 		},
 	}
 	addDefaultArgs := func() {
-		for i := 1; i < len(tokens); i++ {
+		for i := startIndex; i < len(tokens); i++ {
 			node.addChild(&NodeArg{
 				Node: &Node{
 					kind:  NodeKindCommandArg,
@@ -113,14 +121,14 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 		addDefaultArgs()
 		return node
 	}
-	if len(spec.Overloads) == 0 && len(tokens) > 1 {
+	if len(spec.Overloads) == 0 && len(tokens) > startIndex {
 		// Immediately invalidate if no overloads exist but arguments are provided
 		node.name = commandInput
 		node.spec = spec
 		addDefaultArgs()
 		return node
 	}
-	if len(spec.Overloads) == 0 && len(tokens) == 1 {
+	if len(spec.Overloads) == 0 && len(tokens) == startIndex {
 		node.kind = NodeKindCommand
 		node.name = commandInput
 		node.spec = spec
@@ -137,7 +145,7 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 			eol:      eol,
 		}
 		overloadStates[i] = state
-		args, _ := state.parse(input, tokens[1:])
+		args, _ := state.parse(input, tokens[startIndex:])
 		if state.matched {
 			node.kind = NodeKindCommand
 			node.name = commandInput
