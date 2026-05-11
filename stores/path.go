@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
@@ -15,6 +16,7 @@ import (
 type PathStore struct {
 	store        []core.Symbol
 	trimSuffixes []string
+	mu           sync.RWMutex
 	VanillaData  mapset.Set[string]
 }
 
@@ -43,14 +45,20 @@ func (s *PathStore) Insert(pattern shared.Pattern, uri protocol.DocumentURI) {
 			break
 		}
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.store = append(s.store, core.Symbol{Value: path, URI: uri})
 }
 
 func (s *PathStore) Get() []core.Symbol {
-	return s.store
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return slices.Clone(s.store)
 }
 
 func (s *PathStore) Delete(uri protocol.DocumentURI) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.store = slices.DeleteFunc(s.store, func(symbol core.Symbol) bool {
 		return symbol.URI == uri
 	})
