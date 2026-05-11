@@ -87,7 +87,8 @@ func (d *TextDocument) GetContent() []rune {
 }
 
 func (d *TextDocument) CreateVirtualDocument(ranges ...protocol.Range) *TextDocument {
-	textLength := uint32(len(d.content))
+	content := slices.Clone(d.content)
+	textLength := uint32(len(content))
 	result := make([]rune, textLength)
 
 	offsets := make([][2]uint32, len(ranges))
@@ -97,7 +98,7 @@ func (d *TextDocument) CreateVirtualDocument(ranges ...protocol.Range) *TextDocu
 	}
 
 	for i := range textLength {
-		ch := d.content[i]
+		ch := content[i]
 		if isEOL(ch) {
 			result[i] = ch
 			continue
