@@ -728,9 +728,12 @@ func (h *CommandHandler) parseLine(document *textdocument.TextDocument, position
 	startOffset := document.OffsetAt(protocol.Position{
 		Line: position.Line,
 	})
+	endOffset := document.OffsetAt(protocol.Position{
+		Line: position.Line + 1,
+	})
 	offset := document.OffsetAt(position)
 	rOffset := offset - startOffset
-	line := content[startOffset:]
+	line := content[startOffset:endOffset]
 	root, _ := h.Parser.Parse(line)
 	return parsedCommandLine{
 		Content:        line,
