@@ -20,4 +20,13 @@ var Dialogue = &JsonHandler{
 			},
 		},
 	},
+	CommandEntry: JsonCommandEntry{
+		Handler:      EmbedDialogueCommand,
+		RequireSlash: true,
+		Path: []shared.JsonPath{
+			shared.JsonValue("minecraft:npc_dialogue/scenes/*/on_open_commands/*"),
+			shared.JsonValue("minecraft:npc_dialogue/scenes/*/on_close_commands/*"),
+			shared.JsonValue("minecraft:npc_dialogue/scenes/*/buttons/*/commands/*"),
+		},
+	},
 }

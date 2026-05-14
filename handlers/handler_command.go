@@ -16,11 +16,6 @@ import (
 	"github.com/rockide/language-server/stores"
 )
 
-// TODO:
-// JSON Parse
-// JSON Defintions
-// JSON Rename
-
 type CommandHandler struct {
 	Pattern      shared.Pattern
 	Parser       *mcfunction.Parser
@@ -39,6 +34,10 @@ func (h *CommandHandler) Parse(uri protocol.DocumentURI) error {
 	if err != nil {
 		return err
 	}
+	return h.ParseDocument(document)
+}
+
+func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) error {
 	content := document.GetContent()
 	root, _ := h.Parser.Parse(content)
 	mcfunction.WalkNodeTree(root, func(i mcfunction.INode) bool {
@@ -60,9 +59,13 @@ func (h *CommandHandler) Parse(uri protocol.DocumentURI) error {
 				scope = entry.Scope(i)
 			}
 			s, e := i.Range()
+			nodeValue := i.Text(content)
+			if h.EscapeQuotes {
+				nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
+			}
 			entry.Store.Insert(scope, core.Symbol{
-				URI:   uri,
-				Value: i.Text(content),
+				URI:   document.URI,
+				Value: nodeValue,
 				Range: &protocol.Range{
 					Start: document.PositionAt(s),
 					End:   document.PositionAt(e),
@@ -193,8 +196,12 @@ func (h *CommandHandler) innerCompletions(node mcfunction.INodeCommand, paramSpe
 		if len(kind) > 0 {
 			k = kind[0]
 		}
+		label := value
+		if strings.HasPrefix(value, `\"`) {
+			label = strings.ReplaceAll(value, `\"`, `"`)
+		}
 		result = append(result, protocol.CompletionItem{
-			Label: value,
+			Label: label,
 			Kind:  k,
 			TextEdit: &protocol.Or_CompletionItem_textEdit{
 				Value: protocol.TextEdit{
@@ -467,6 +474,9 @@ func (h *CommandHandler) PrepareRename(document *textdocument.TextDocument, posi
 		End:   document.PositionAt(startOffset + rEnd),
 	}
 	nodeValue := node.Text(line)
+	if h.EscapeQuotes {
+		nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
+	}
 	for _, tag := range paramSpec.Tags {
 		entry, ok := commandEntries[tag]
 		if !ok || entry.DisableRename {
@@ -498,7 +508,9 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 		return nil
 	}
 	nodeValue := node.Text(line)
-	// TODO: Check cross rename between unescaped and escaped strings
+	if h.EscapeQuotes {
+		nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
+	}
 	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
 	for _, tag := range paramSpec.Tags {
 		entry, ok := commandEntries[tag]
@@ -513,8 +525,14 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 			if item.Value != nodeValue {
 				continue
 			}
+			var newText string
+			if strings.HasSuffix(item.URI.Path(), ".json") {
+				newText = strings.ReplaceAll(newName, `"`, `\"`)
+			} else {
+				newText = newName
+			}
 			edit := protocol.TextEdit{
-				NewText: newName,
+				NewText: newText,
 				Range:   *item.Range,
 			}
 			changes[item.URI] = append(changes[item.URI], edit)
