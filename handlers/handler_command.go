@@ -41,7 +41,7 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 	content := document.GetContent()
 	root, _ := h.Parser.Parse(content)
 	mcfunction.WalkNodeTree(root, func(i mcfunction.INode) bool {
-		nodeSpec, ok := i.(mcfunction.NodeParam)
+		nodeSpec, ok := i.(mcfunction.INodeParam)
 		if !ok {
 			return true
 		}
@@ -404,7 +404,7 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	nodeSpec, ok := node.(mcfunction.NodeParam)
+	nodeSpec, ok := node.(mcfunction.INodeParam)
 	if !ok {
 		return result
 	}
@@ -460,7 +460,7 @@ func (h *CommandHandler) PrepareRename(document *textdocument.TextDocument, posi
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	nodeSpec, ok := node.(mcfunction.NodeParam)
+	nodeSpec, ok := node.(mcfunction.INodeParam)
 	if !ok {
 		return nil
 	}
@@ -499,7 +499,7 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	nodeSpec, ok := node.(mcfunction.NodeParam)
+	nodeSpec, ok := node.(mcfunction.INodeParam)
 	if !ok {
 		return nil
 	}

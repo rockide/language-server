@@ -16,13 +16,13 @@ type INode interface {
 	IsInside(pos uint32) bool
 }
 
-type NodeParam interface {
+type INodeParam interface {
 	ParamSpec() (ParameterSpec, bool)
 }
 
 type INodeArg interface {
 	INode
-	NodeParam
+	INodeParam
 	ParamKind() ParameterKind
 	CommandNode() INodeCommand
 }
