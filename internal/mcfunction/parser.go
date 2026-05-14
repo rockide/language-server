@@ -92,12 +92,8 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 	startIndex := 1
 	first := tokens[0]
 	commandInput := first.Text(input)
-	if len(commandInput) > 0 && commandInput[0] == '/' {
-		if len(tokens) > 1 {
-			first = tokens[1]
-			commandInput = first.Text(input)
-			startIndex = 2
-		}
+	if commandInput[0] == '/' {
+		commandInput = commandInput[1:]
 	}
 	spec, ok := commands[commandInput]
 	node := &NodeCommand{

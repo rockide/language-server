@@ -113,4 +113,10 @@ func TestLexer(t *testing.T) {
 		{lexer.TokenWhitespace, 12, 13},
 		{lexer.TokenString, 13, 20},
 	})
+
+	assertTokens(t, "/say hello", []lexer.Token{
+		{lexer.TokenString, 0, 4},
+		{lexer.TokenWhitespace, 4, 5},
+		{lexer.TokenString, 5, 10},
+	})
 }
