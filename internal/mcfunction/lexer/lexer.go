@@ -7,17 +7,15 @@ import (
 type Lexer struct {
 	src           []rune
 	i             int
-	state         state
-	lastPos       int
 	escapedQuotes bool
+	isNewline     bool
 }
 
 func New(input []rune) *Lexer {
 	return &Lexer{
 		src:           input,
-		state:         StateStart,
-		lastPos:       -1,
 		escapedQuotes: false,
+		isNewline:     true,
 	}
 }
 
@@ -43,11 +41,17 @@ func (l *Lexer) peekN(n int) rune {
 	return l.src[l.i+n]
 }
 
+func (l *Lexer) previous() rune {
+	if l.i-1 < 0 {
+		return 0
+	}
+	return l.src[l.i-1]
+}
+
 func (l *Lexer) advance() rune {
 	if l.eof() {
 		return 0
 	}
-	l.lastPos = l.i
 	r := l.src[l.i]
 	l.i++
 	return r
@@ -65,6 +69,11 @@ func (l *Lexer) pos() uint32 {
 
 func (l *Lexer) emit(kind TokenKind, start uint32) Token {
 	end := l.pos()
+	if kind == TokenNewline {
+		l.isNewline = true
+	} else {
+		l.isNewline = false
+	}
 	return Token{
 		Kind:  kind,
 		Start: start,
@@ -92,65 +101,16 @@ func (l *Lexer) matchPairs(open, close rune) bool {
 	return false
 }
 
-func (l *Lexer) isInfiniteLoop() bool {
-	return l.i == l.lastPos
-}
-
 func (l *Lexer) Next() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
 		for !l.eof() {
-			if l.isInfiniteLoop() {
-				panic("possible infinite loop in lexer")
-			}
 			r := l.peek()
 			start := l.pos()
+
 			switch r {
 			case '\r':
 				l.advance()
 				continue
-			case ' ', '\t':
-				l.advanceWhile(isWhitespace)
-				if !yield(l.emit(TokenWhitespace, start)) {
-					return
-				}
-				continue
-			case '\n':
-				l.advance()
-				if !yield(l.emit(TokenNewline, start)) {
-					return
-				}
-				l.state = StateStart
-				continue
-			case '/':
-				l.advance()
-				if !yield(l.emit(TokenString, start)) {
-					return
-				}
-				continue
-
-			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-				// checks for ident start with digit
-				n := 1
-				for isDigit(l.peekN(n)) {
-					n++
-				}
-				if l.peekN(n) == '_' {
-					l.state = StateString
-				} else {
-					l.state = StateNumber
-				}
-			case '-':
-				if l.i+1 < len(l.src) && isDigit(l.src[l.i+1]) {
-					l.state = StateNegativeNumber
-				}
-			case '~', '^':
-				l.state = StateRelativeNumber
-			case '@':
-				l.state = StateSelector
-			case '[':
-				l.state = StateMap
-			case '{':
-				l.state = StateJSON
 			case '=':
 				l.advance()
 				if !yield(l.emit(TokenEquals, start)) {
@@ -160,6 +120,11 @@ func (l *Lexer) Next() iter.Seq[Token] {
 			case ',':
 				l.advance()
 				if !yield(l.emit(TokenComma, start)) {
+					return
+				}
+			case '!':
+				l.advance()
+				if !yield(l.emit(TokenBang, start)) {
 					return
 				}
 				continue
@@ -176,134 +141,24 @@ func (l *Lexer) Next() iter.Seq[Token] {
 					}
 				}
 				continue
-			case '!':
-				l.advance()
-				if !yield(l.emit(TokenBang, start)) {
-					return
-				}
-				continue
-			}
-
-			switch l.state {
-			case StateStart:
-				if r == '#' {
-					if l.peek() == '#' {
-						l.advanceWhile(func(r rune) bool { return !isNewline(r) })
-						if !yield(l.emit(TokenComment, start)) {
-							return
-						}
-						continue
-					}
-				}
-				fallthrough
-			case StateString:
-				if l.escapedQuotes && r == '\\' && l.peekN(1) == '"' {
-					l.advance() // consume '\\'
-					l.advance() // consume opening '"'
-					terminated := false
-					for !l.eof() {
-						r = l.peek()
-						if isNewline(r) {
-							break
-						}
-						if r == '\\' && l.peekN(1) == '"' {
-							l.advance() // consume '\\'
-							l.advance() // consume closing '"'
-							terminated = true
-							break
-						}
-						l.advance()
-					}
-					if terminated {
-						if !yield(l.emit(TokenString, start)) {
-							return
-						}
-					} else {
-						if !yield(l.emit(TokenUnterminatedString, start)) {
-							return
-						}
-						l.state = StateStart
-						continue
-					}
-					break
-				}
-				if r == '"' {
-					l.advance()
-					l.advanceWhile(func(r rune) bool { return r != '"' && !isNewline(r) })
-					if l.peek() == '"' {
-						l.advance()
-						if !yield(l.emit(TokenString, start)) {
-							return
-						}
-					} else {
-						if !yield(l.emit(TokenUnterminatedString, start)) {
-							return
-						}
-						l.state = StateStart
-						continue
-					}
-				} else {
-					l.advanceWhile(func(r rune) bool { return isIdent(r) })
-					if !yield(l.emit(TokenString, start)) {
-						return
-					}
-				}
-			case StateNegativeNumber:
-				l.advance() // consume '-'
-				a := l.i
-				l.advanceWhile(isDigit)
-				b := l.i
-				r := l.peek()
-				if r == '.' && isDigit(l.peekN(1)) {
-					l.advance()
-					l.advanceWhile(isDigit)
-				}
-				if a == b {
-					if !yield(l.emit(TokenString, start)) {
-						return
-					}
-				} else {
+			case '-':
+				if isDigit(l.peekN(1)) {
+					l.advance() // consume '-'
+					l.scanNumber()
 					if !yield(l.emit(TokenNumber, start)) {
 						return
 					}
+					continue
 				}
-			case StateNumber:
-				l.advanceWhile(isDigit)
-				r := l.peek()
-				if r == '.' && isDigit(l.peekN(1)) {
-					l.advance() // consume '.'
-					l.advanceWhile(isDigit)
+			case '#':
+				if l.isNewline && l.peekN(1) == '#' {
+					l.advanceWhile(func(r rune) bool { return !isNewline(r) })
+					if !yield(l.emit(TokenComment, start)) {
+						return
+					}
+					continue
 				}
-				if !yield(l.emit(TokenNumber, start)) {
-					return
-				}
-			case StateRelativeNumber:
-				// possible patterns:
-				// ~
-				// ~2
-				// ~2.2
-				// ~.2
-				// ~-2
-				// ~-2.2
-				// ~-.2
-				l.advance() // consume '~' or '^'
-				r := l.peek()
-				if r == '-' {
-					l.advance() // consume '-'
-					r = l.peek()
-				}
-				if isDigit(r) {
-					l.advanceWhile(isDigit)
-					r = l.peek()
-				}
-				if r == '.' {
-					l.advance() // consume '.'
-					l.advanceWhile(isDigit)
-				}
-				if !yield(l.emit(TokenRelativeNumber, start)) {
-					return
-				}
-			case StateSelector:
+			case '@':
 				l.advance() // consume '@'
 				a := l.i
 				l.advanceWhile(isLetter)
@@ -317,7 +172,8 @@ func (l *Lexer) Next() iter.Seq[Token] {
 						return
 					}
 				}
-			case StateMap:
+				continue
+			case '[':
 				if l.matchPairs('[', ']') {
 					if !yield(l.emit(TokenMap, start)) {
 						return
@@ -327,7 +183,8 @@ func (l *Lexer) Next() iter.Seq[Token] {
 						return
 					}
 				}
-			case StateJSON:
+				continue
+			case '{':
 				if l.matchPairs('{', '}') {
 					if !yield(l.emit(TokenJSON, start)) {
 						return
@@ -337,8 +194,88 @@ func (l *Lexer) Next() iter.Seq[Token] {
 						return
 					}
 				}
+				continue
+			case '~', '^':
+				l.advance() // consume '~' or '^'
+				r = l.peek()
+				if r == '-' {
+					l.advance() // consume '-'
+					r = l.peek()
+				}
+				if r == '.' {
+					l.advance() // consume '.'
+					l.advanceWhile(isDigit)
+				} else {
+					l.scanNumber()
+				}
+				if !yield(l.emit(TokenRelativeNumber, start)) {
+					return
+				}
+				continue
+			case '"':
+				l.scanString()
+				if l.previous() == '"' {
+					if !yield(l.emit(TokenString, start)) {
+						return
+					}
+				} else {
+					if !yield(l.emit(TokenUnterminatedString, start)) {
+						return
+					}
+				}
+				continue
+			case '\\':
+				if l.escapedQuotes && l.peekN(1) == '"' {
+					l.scanString()
+					if l.previous() == '"' {
+						if !yield(l.emit(TokenString, start)) {
+							return
+						}
+					} else {
+						if !yield(l.emit(TokenUnterminatedString, start)) {
+							return
+						}
+					}
+					continue
+				}
 			}
-			l.state = StateString
+
+			if isWhitespace(r) {
+				l.advanceWhile(isWhitespace)
+				if !yield(l.emit(TokenWhitespace, start)) {
+					return
+				}
+				continue
+			}
+
+			if isNewline(r) {
+				l.advance()
+				if !yield(l.emit(TokenNewline, start)) {
+					return
+				}
+				continue
+			}
+
+			if isDigit(r) {
+				l.scanNumber()
+				if isIdent(l.peek()) {
+					l.advanceWhile(isIdent)
+					if !yield(l.emit(TokenString, start)) {
+						return
+					}
+				} else {
+					if !yield(l.emit(TokenNumber, start)) {
+						return
+					}
+				}
+				continue
+			}
+
+			l.advanceWhile(func(r rune) bool { return !isWhitespace(r) && !isNewline(r) })
+			if !yield(l.emit(TokenString, start)) {
+				return
+			}
+
 		}
 	}
 }
@@ -346,8 +283,26 @@ func (l *Lexer) Next() iter.Seq[Token] {
 func (l *Lexer) Reset(input []rune) {
 	l.src = input
 	l.i = 0
-	l.lastPos = -1
-	l.state = StateStart
+	l.isNewline = true
+}
+
+func (l *Lexer) scanNumber() {
+	l.advanceWhile(isDigit)
+	if l.peek() == '.' && isDigit(l.peekN(1)) {
+		l.advance() // consume '.'
+		l.advanceWhile(isDigit)
+	}
+}
+
+func (l *Lexer) scanString() {
+	if l.escapedQuotes {
+		l.advance() // consume opening '\'
+	}
+	l.advance() // consume opening '"'
+	l.advanceWhile(func(r rune) bool { return r != '"' && !isNewline(r) })
+	if l.peek() == '"' {
+		l.advance()
+	}
 }
 
 func isWhitespace(r rune) bool {
@@ -358,14 +313,14 @@ func isNewline(r rune) bool {
 	return r == '\n'
 }
 
-func isIdent(r rune) bool {
-	return isLetter(r) || isDigit(r) || r == '_' || r == '-' || r == ':'
-}
-
 func isDigit(r rune) bool {
 	return r >= '0' && r <= '9'
 }
 
 func isLetter(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+}
+
+func isIdent(r rune) bool {
+	return isLetter(r) || r == '_' || r == '-' || r == ':' || r == '§'
 }
