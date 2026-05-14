@@ -5,18 +5,24 @@ import (
 )
 
 type Lexer struct {
-	src     []rune
-	i       int
-	state   state
-	lastPos int
+	src           []rune
+	i             int
+	state         state
+	lastPos       int
+	escapedQuotes bool
 }
 
 func New(input []rune) *Lexer {
 	return &Lexer{
-		src:     input,
-		state:   StateStart,
-		lastPos: -1,
+		src:           input,
+		state:         StateStart,
+		lastPos:       -1,
+		escapedQuotes: false,
 	}
+}
+
+func (l *Lexer) SetEscapedQuotes(value bool) {
+	l.escapedQuotes = value
 }
 
 func (l *Lexer) eof() bool {
@@ -191,6 +197,36 @@ func (l *Lexer) Next() iter.Seq[Token] {
 				}
 				fallthrough
 			case StateString:
+				if l.escapedQuotes && r == '\\' && l.peekN(1) == '"' {
+					l.advance() // consume '\\'
+					l.advance() // consume opening '"'
+					terminated := false
+					for !l.eof() {
+						r = l.peek()
+						if isNewline(r) {
+							break
+						}
+						if r == '\\' && l.peekN(1) == '"' {
+							l.advance() // consume '\\'
+							l.advance() // consume closing '"'
+							terminated = true
+							break
+						}
+						l.advance()
+					}
+					if terminated {
+						if !yield(l.emit(TokenString, start)) {
+							return
+						}
+					} else {
+						if !yield(l.emit(TokenUnterminatedString, start)) {
+							return
+						}
+						l.state = StateStart
+						continue
+					}
+					break
+				}
 				if r == '"' {
 					l.advance()
 					l.advanceWhile(func(r rune) bool { return r != '"' && !isNewline(r) })

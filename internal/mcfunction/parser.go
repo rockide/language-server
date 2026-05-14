@@ -7,9 +7,10 @@ import (
 )
 
 type Parser struct {
-	lexer    *lexer.Lexer
-	commands map[string]*Spec
-	options  ParserOptions
+	lexer         *lexer.Lexer
+	commands      map[string]*Spec
+	options       ParserOptions
+	escapedQuotes bool
 }
 
 type ParserOptions struct {
@@ -19,10 +20,16 @@ type ParserOptions struct {
 
 func NewParser(options ParserOptions, commands ...*Spec) *Parser {
 	return &Parser{
-		lexer:    lexer.New([]rune{}),
-		commands: make(map[string]*Spec),
-		options:  options,
+		lexer:         lexer.New([]rune{}),
+		commands:      make(map[string]*Spec),
+		options:       options,
+		escapedQuotes: false,
 	}
+}
+
+func (p *Parser) SetEscapedQuotes(value bool) {
+	p.escapedQuotes = value
+	p.lexer.SetEscapedQuotes(value)
 }
 
 func (p *Parser) RegisterCommands(specs ...*Spec) {
