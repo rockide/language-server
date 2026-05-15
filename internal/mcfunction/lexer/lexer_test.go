@@ -50,6 +50,21 @@ func TestLexer(t *testing.T) {
 		{lexer.TokenWhitespace, 2, 3},
 		{lexer.TokenString, 3, 10},
 	})
+	assertTokens(t, "type=player", []lexer.Token{
+		{lexer.TokenString, 0, 4},
+		{lexer.TokenEquals, 4, 5},
+		{lexer.TokenString, 5, 11},
+	})
+	assertTokens(t, "player~~~", []lexer.Token{
+		{lexer.TokenString, 0, 6},
+		{lexer.TokenRelativeNumber, 6, 7},
+		{lexer.TokenRelativeNumber, 7, 8},
+		{lexer.TokenRelativeNumber, 8, 9},
+	})
+	assertTokens(t, "camera@s", []lexer.Token{
+		{lexer.TokenString, 0, 6},
+		{lexer.TokenSelector, 6, 8},
+	})
 
 	assertTokens(t, "~~~", []lexer.Token{
 		{lexer.TokenRelativeNumber, 0, 1},

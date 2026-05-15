@@ -271,7 +271,9 @@ func (l *Lexer) Next() iter.Seq[Token] {
 				continue
 			}
 
-			l.advanceWhile(func(r rune) bool { return !isWhitespace(r) && !isNewline(r) })
+			l.advanceWhile(func(r rune) bool {
+				return !isWhitespace(r) && !isNewline(r) && r != '=' && r != ',' && r != '!' && r != '[' && r != '{' && r != '~' && r != '^' && r != '"' && r != '@'
+			})
 			if !yield(l.emit(TokenString, start)) {
 				return
 			}
