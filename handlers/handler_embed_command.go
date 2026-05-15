@@ -13,3 +13,10 @@ var EmbedDialogueCommand = &CommandHandler{
 		EscapeQuotes: true,
 	}),
 }
+
+var EmbedEventCommand = &CommandHandler{
+	Parser: newCommandParser(mcfunction.ParserOptions{
+		EscapeQuotes: true,
+		EventAlias:   true,
+	}),
+}

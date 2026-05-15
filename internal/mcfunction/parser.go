@@ -7,29 +7,32 @@ import (
 )
 
 type Parser struct {
-	commands      map[string]*Spec
-	options       ParserOptions
-	escapedQuotes bool
+	commands map[string]*Spec
+	options  ParserOptions
 }
 
 type ParserOptions struct {
 	InitiatorSelector bool // enables @initiator selector
 	EducationMode     bool // enables education edition specific commands and arguments
 	EscapeQuotes      bool // enables escaping quotes with backslash in arguments
+	EventAlias        bool // enables alias event parsing
 }
 
 func NewParser(options ParserOptions, commands ...*Spec) *Parser {
 	parser := &Parser{
-		commands:      make(map[string]*Spec),
-		options:       options,
-		escapedQuotes: options.EscapeQuotes,
+		commands: make(map[string]*Spec),
+		options:  options,
 	}
 	parser.RegisterCommands(commands...)
 	return parser
 }
 
 func (p *Parser) EscapeQuotes() bool {
-	return p.escapedQuotes
+	return p.options.EscapeQuotes
+}
+
+func (p *Parser) QuickEvent() bool {
+	return p.options.EventAlias
 }
 
 func (p *Parser) RegisterCommands(specs ...*Spec) {
@@ -50,19 +53,26 @@ func (p *Parser) GetSelectors() map[string]bool {
 }
 
 func (p *Parser) Parse(input []rune) (INode, error) {
-	if len(p.commands) == 0 {
+	if len(p.commands) == 0 && !p.options.EventAlias {
 		return nil, fmt.Errorf("no commands registered")
 	}
 	lex := lexer.New(input)
-	lex.SetEscapedQuotes(p.escapedQuotes)
-	root := &Node{}
+	lex.SetEscapedQuotes(p.options.EscapeQuotes)
+	root := &Node{
+		kind: NodeKindFile,
+	}
 	tokens := []lexer.Token{}
 	eol := uint32(0)
 	parse := func() {
 		if len(tokens) == 0 {
 			return
 		}
-		node := parseCommand(tokens, input, p.commands, p.options, eol)
+		var node *NodeCommand
+		if p.options.EventAlias && tokens[0].Kind == lexer.TokenSelector {
+			node = parseEventAlias(tokens, input)
+		} else {
+			node = parseCommand(tokens, input, p.commands, p.options, eol)
+		}
 		node.end = eol
 		root.addChild(node)
 	}
@@ -87,6 +97,32 @@ func (p *Parser) Parse(input []rune) (INode, error) {
 	parse()
 	root.end = uint32(len(input))
 	return root, nil
+}
+
+func parseEventAlias(tokens []lexer.Token, input []rune) *NodeCommand {
+	node := &NodeCommand{
+		Node: &Node{
+			kind:  NodeKindInvalidCommand,
+			start: tokens[0].Start,
+		},
+		overloadStates: make([]*overloadState, len(EventAliasSpec.Overloads)),
+	}
+	state := &overloadState{
+		spec:    EventAliasSpec,
+		ov:      &EventAliasSpec.Overloads[0],
+		matched: true,
+	}
+	args, _ := state.parse(input, tokens)
+	if state.matched {
+		node.kind = NodeKindCommand
+		node.spec = EventAliasSpec
+		node.children = make([]INode, 0, len(args))
+		for _, arg := range args {
+			node.addChild(arg)
+		}
+	}
+	node.overloadStates[0] = state
+	return node
 }
 
 func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec, options ParserOptions, eol uint32) *NodeCommand {

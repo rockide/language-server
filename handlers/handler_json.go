@@ -235,10 +235,10 @@ func (j *JsonHandler) commandEntry(location *jsonc.Location) *JsonCommandEntry {
 	}
 	for _, jsonPath := range j.CommandEntry.Path {
 		if location.Path.Matches(jsonPath.Path) {
-			if j.CommandEntry.RequireSlash {
-				if len(nodeValue) == 0 || nodeValue[0] != '/' {
-					return nil
-				}
+			slashOk := !j.CommandEntry.RequireSlash || strings.HasPrefix(nodeValue, "/")
+			quickEventOk := j.CommandEntry.Handler.Parser.QuickEvent() && strings.HasPrefix(nodeValue, "@")
+			if !slashOk && !quickEventOk {
+				return nil
 			}
 			return &j.CommandEntry
 		}
@@ -510,11 +510,6 @@ func (j *JsonHandler) SemanticTokens(document *textdocument.TextDocument) *proto
 			}
 			if entry := j.commandEntry(&location); entry != nil {
 				startOffset := offset + 1
-				if strings.HasPrefix(text, "/") {
-					startOffset++
-				} else if entry.RequireSlash {
-					return
-				}
 				endOffset := offset + length - 1
 				r := protocol.Range{
 					Start: document.PositionAt(startOffset),

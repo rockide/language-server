@@ -108,6 +108,11 @@ func TestLexer(t *testing.T) {
 	assertTokens(t, "@", []lexer.Token{
 		{lexer.TokenString, 0, 1},
 	})
+	assertTokens(t, "@s foo:bar", []lexer.Token{
+		{lexer.TokenSelector, 0, 2},
+		{lexer.TokenWhitespace, 2, 3},
+		{lexer.TokenString, 3, 10},
+	})
 
 	assertTokens(t, "execute as @s[x=4]", []lexer.Token{
 		{lexer.TokenString, 0, 7},
