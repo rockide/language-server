@@ -10,7 +10,8 @@ var EmbedCommand = &CommandHandler{
 
 var EmbedDialogueCommand = &CommandHandler{
 	Parser: newCommandParser(mcfunction.ParserOptions{
-		EscapeQuotes: true,
+		EscapeQuotes:      true,
+		InitiatorSelector: true,
 	}),
 }
 
