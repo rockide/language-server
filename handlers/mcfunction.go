@@ -7,9 +7,7 @@ import (
 )
 
 func newCommandParser(options mcfunction.ParserOptions) *mcfunction.Parser {
-	parser := mcfunction.NewParser(options)
-	parser.RegisterCommands(builtin.Commands...)
-	return parser
+	return mcfunction.NewParser(options, builtin.Commands...)
 }
 
 var defaultCommandParser = newCommandParser(mcfunction.ParserOptions{})

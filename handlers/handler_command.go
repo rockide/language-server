@@ -17,9 +17,8 @@ import (
 )
 
 type CommandHandler struct {
-	Pattern      shared.Pattern
-	Parser       *mcfunction.Parser
-	EscapeQuotes bool
+	Pattern shared.Pattern
+	Parser  *mcfunction.Parser
 }
 
 func (h *CommandHandler) GetPattern() shared.Pattern {
@@ -60,7 +59,7 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 			}
 			s, e := i.Range()
 			nodeValue := i.Text(content)
-			if h.EscapeQuotes {
+			if h.Parser.EscapeQuotes() {
 				nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 			}
 			entry.Store.Insert(scope, core.Symbol{
@@ -182,7 +181,7 @@ func (h *CommandHandler) innerCompletions(node mcfunction.INodeCommand, paramSpe
 		if strings.ContainsAny(s, " /") {
 			s = `"` + s + `"`
 		}
-		if h.EscapeQuotes {
+		if h.Parser.EscapeQuotes() {
 			s = strings.ReplaceAll(s, `"`, `\"`)
 		}
 		return s
@@ -418,7 +417,7 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 		End:   document.PositionAt(startOffset + rEnd),
 	}
 	nodeValue := node.Text(line)
-	if h.EscapeQuotes {
+	if h.Parser.EscapeQuotes() {
 		nodeValue = strings.Trim(nodeValue, `\"`)
 	} else {
 		nodeValue = strings.Trim(nodeValue, `"`)
@@ -474,7 +473,7 @@ func (h *CommandHandler) PrepareRename(document *textdocument.TextDocument, posi
 		End:   document.PositionAt(startOffset + rEnd),
 	}
 	nodeValue := node.Text(line)
-	if h.EscapeQuotes {
+	if h.Parser.EscapeQuotes() {
 		nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 	}
 	for _, tag := range paramSpec.Tags {
@@ -508,7 +507,7 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 		return nil
 	}
 	nodeValue := node.Text(line)
-	if h.EscapeQuotes {
+	if h.Parser.EscapeQuotes() {
 		nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 	}
 	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)

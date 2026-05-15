@@ -7,7 +7,6 @@ import (
 )
 
 type Parser struct {
-	lexer         *lexer.Lexer
 	commands      map[string]*Spec
 	options       ParserOptions
 	escapedQuotes bool
@@ -16,20 +15,21 @@ type Parser struct {
 type ParserOptions struct {
 	InitiatorSelector bool // enables @initiator selector
 	EducationMode     bool // enables education edition specific commands and arguments
+	EscapeQuotes      bool // enables escaping quotes with backslash in arguments
 }
 
 func NewParser(options ParserOptions, commands ...*Spec) *Parser {
-	return &Parser{
-		lexer:         lexer.New([]rune{}),
+	parser := &Parser{
 		commands:      make(map[string]*Spec),
 		options:       options,
-		escapedQuotes: false,
+		escapedQuotes: options.EscapeQuotes,
 	}
+	parser.RegisterCommands(commands...)
+	return parser
 }
 
-func (p *Parser) SetEscapedQuotes(value bool) {
-	p.escapedQuotes = value
-	p.lexer.SetEscapedQuotes(value)
+func (p *Parser) EscapeQuotes() bool {
+	return p.escapedQuotes
 }
 
 func (p *Parser) RegisterCommands(specs ...*Spec) {
@@ -53,7 +53,8 @@ func (p *Parser) Parse(input []rune) (INode, error) {
 	if len(p.commands) == 0 {
 		return nil, fmt.Errorf("no commands registered")
 	}
-	p.lexer.Reset(input)
+	lex := lexer.New(input)
+	lex.SetEscapedQuotes(p.escapedQuotes)
 	root := &Node{}
 	tokens := []lexer.Token{}
 	eol := uint32(0)
@@ -65,7 +66,7 @@ func (p *Parser) Parse(input []rune) (INode, error) {
 		node.end = eol
 		root.addChild(node)
 	}
-	for token := range p.lexer.Next() {
+	for token := range lex.Next() {
 		eol = token.End
 		switch token.Kind {
 		case lexer.TokenWhitespace:
