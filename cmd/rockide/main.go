@@ -9,6 +9,22 @@ import (
 	"github.com/sourcegraph/jsonrpc2"
 )
 
+type rockideHandler struct {
+	jsonrpc2.Handler
+}
+
+func (h rockideHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
+	switch req.Method {
+	case "textDocument/didOpen",
+		"textDocument/didChange",
+		"textDocument/didSave",
+		"textDocument/didClose":
+		h.Handler.Handle(ctx, conn, req)
+	default:
+		go h.Handler.Handle(ctx, conn, req)
+	}
+}
+
 var version = "dev"
 
 func main() {
@@ -22,5 +38,5 @@ func main() {
 	ctx := context.Background()
 	handler := jsonrpc2.HandlerWithError(server.Handle)
 	stream := jsonrpc2.NewBufferedStream(&stdio{}, jsonrpc2.VSCodeObjectCodec{})
-	<-jsonrpc2.NewConn(ctx, stream, jsonrpc2.AsyncHandler(handler)).DisconnectNotify()
+	<-jsonrpc2.NewConn(ctx, stream, rockideHandler{handler}).DisconnectNotify()
 }
