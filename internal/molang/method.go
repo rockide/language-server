@@ -29,7 +29,7 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "all",
-		Signature:   "(arg0: boolean, arg1: boolean, ...argv: boolean[]): boolean",
+		Signature:   "(expected: T, ...values: T[]): boolean",
 		Description: "Requires at least 3 arguments. Evaluates the first argument, then returns 1.0 if all of the following arguments evaluate to the same value as the first. Otherwise it returns 0.0.",
 	},
 	{
@@ -54,7 +54,7 @@ var molangQueries = []Method{
 	},
 	{
 		Name:        "any",
-		Signature:   "(arg0: boolean, arg1: boolean, ...argv: boolean[]): boolean",
+		Signature:   "(expected: T, ...values: T[]): boolean",
 		Description: "Requires at least 3 arguments. Evaluates the first argument, then returns 1.0 if any of the following arguments evaluate to the same value as the first. Otherwise it returns 0.0.",
 	},
 	{
