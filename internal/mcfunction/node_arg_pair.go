@@ -13,59 +13,51 @@ const (
 	PairKindValue
 )
 
-type NodeArgPair struct {
-	*NodeArg
+type nodeArgPair struct {
+	*nodeArg
 	keySpec   *ParameterSpec
 	valueSpec *ParameterSpec
 }
 
-func (n *NodeArgPair) addChild(child INode) {
+func (n *nodeArgPair) addChild(child Node) {
 	child.setParent(n)
 	child.setIndex(len(n.children))
 	n.children = append(n.children, child)
 }
 
-func (n *NodeArgPair) setParent(parent INode) {
+func (n *nodeArgPair) setParent(parent Node) {
 	n.parent = parent
 }
 
-func (n *NodeArgPair) setIndex(index int) {
-	n.index = index
-}
-
-func (n *NodeArgPair) KeySpec() (ParameterSpec, bool) {
+func (n *nodeArgPair) KeySpec() (ParameterSpec, bool) {
 	return *n.keySpec, n.keySpec != nil
 }
 
-func (n *NodeArgPair) ValueSpec() (ParameterSpec, bool) {
+func (n *nodeArgPair) ValueSpec() (ParameterSpec, bool) {
 	return *n.valueSpec, n.valueSpec != nil
 }
 
-type NodeArgPairChild struct {
-	*NodeArg
+type nodeArgPairChild struct {
+	*nodeArg
 	pairKind PairKind
 }
 
-func (n *NodeArgPairChild) addChild(child INode) {
+func (n *nodeArgPairChild) addChild(child Node) {
 	child.setParent(n)
 	child.setIndex(len(n.children))
 	n.children = append(n.children, child)
 }
 
-func (n *NodeArgPairChild) setParent(parent INode) {
+func (n *nodeArgPairChild) setParent(parent Node) {
 	n.parent = parent
 }
 
-func (n *NodeArgPairChild) setIndex(index int) {
-	n.index = index
-}
-
-func (n *NodeArgPairChild) PairKind() PairKind {
+func (n *nodeArgPairChild) PairKind() PairKind {
 	return n.pairKind
 }
 
-func (n *NodeArgPairChild) KeySpec() (ParameterSpec, bool) {
-	parent, ok := n.parent.(*NodeArgPair)
+func (n *nodeArgPairChild) KeySpec() (ParameterSpec, bool) {
+	parent, ok := n.parent.(*nodeArgPair)
 	if ok {
 		if parent.keySpec != nil {
 			return *parent.keySpec, true
@@ -74,8 +66,8 @@ func (n *NodeArgPairChild) KeySpec() (ParameterSpec, bool) {
 	return ParameterSpec{}, false
 }
 
-func (n *NodeArgPairChild) ValueSpec() (ParameterSpec, bool) {
-	parent, ok := n.parent.(*NodeArgPair)
+func (n *nodeArgPairChild) ValueSpec() (ParameterSpec, bool) {
+	parent, ok := n.parent.(*nodeArgPair)
 	if ok {
 		if parent.valueSpec != nil {
 			return *parent.valueSpec, true
@@ -84,7 +76,7 @@ func (n *NodeArgPairChild) ValueSpec() (ParameterSpec, bool) {
 	return ParameterSpec{}, false
 }
 
-func (n *NodeArgPairChild) ParamSpec() (ParameterSpec, bool) {
+func (n *nodeArgPairChild) ParamSpec() (ParameterSpec, bool) {
 	switch n.pairKind {
 	case PairKindKey:
 		return n.KeySpec()
@@ -94,10 +86,10 @@ func (n *NodeArgPairChild) ParamSpec() (ParameterSpec, bool) {
 	return ParameterSpec{}, false
 }
 
-func (n *NodeArgPairChild) Keys() []string {
-	p, ok := n.parent.(*NodeArgPair)
+func (n *nodeArgPairChild) Keys() []string {
+	p, ok := n.parent.(*nodeArgPair)
 	if ok {
-		a, ok := p.parent.(INodeArgMap)
+		a, ok := p.parent.(MapNode)
 		if ok {
 			return a.MapSpec().Keys()
 		}
@@ -105,7 +97,7 @@ func (n *NodeArgPairChild) Keys() []string {
 	return nil
 }
 
-func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*NodeArgPair {
+func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*nodeArgPair {
 	value := []rune(token.Text(input))
 	startOffset := token.Start + 1
 	value = value[1 : len(value)-1]
@@ -113,7 +105,7 @@ func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*NodeArgPair 
 	keyTokens := []lexer.Token{}
 	var assignToken lexer.Token
 	valueTokens := []lexer.Token{}
-	createPair := func() *NodeArgPair {
+	createPair := func() *nodeArgPair {
 		start := assignToken.Start + startOffset
 		end := assignToken.End + startOffset
 		tKey, kOk := mergeTokens(keyTokens...)
@@ -128,9 +120,9 @@ func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*NodeArgPair 
 		if vOk {
 			end = tValue.End + startOffset
 		}
-		node := &NodeArgPair{
-			NodeArg: &NodeArg{
-				Node: &Node{
+		pairNode := &nodeArgPair{
+			nodeArg: &nodeArg{
+				node: &node{
 					kind:  NodeKindCommandArg,
 					start: start,
 					end:   end,
@@ -139,9 +131,9 @@ func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*NodeArgPair 
 			},
 		}
 		if kOk {
-			key := &NodeArgPairChild{
-				NodeArg: &NodeArg{
-					Node: &Node{
+			key := &nodeArgPairChild{
+				nodeArg: &nodeArg{
+					node: &node{
 						kind:  NodeKindCommandArg,
 						start: tKey.Start + startOffset,
 						end:   tKey.End + startOffset,
@@ -150,19 +142,19 @@ func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*NodeArgPair 
 				},
 				pairKind: PairKindKey,
 			}
-			node.addChild(key)
+			pairNode.addChild(key)
 			keyText = tKey.Text(value)
 			if spec != nil {
-				node.keySpec = spec.keySpec
+				pairNode.keySpec = spec.keySpec
 				if paramSpec, ok := spec.ValueSpec(keyText); ok {
-					node.valueSpec = paramSpec
+					pairNode.valueSpec = paramSpec
 				}
 			}
 		}
 		if assignToken.Kind != lexer.TokenUnknown {
-			node.addChild(&NodeArgPairChild{
-				NodeArg: &NodeArg{
-					Node: &Node{
+			pairNode.addChild(&nodeArgPairChild{
+				nodeArg: &nodeArg{
+					node: &node{
 						kind:  NodeKindCommandArg,
 						start: assignToken.Start + startOffset,
 						end:   assignToken.End + startOffset,
@@ -177,28 +169,28 @@ func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*NodeArgPair 
 			first.Start += startOffset
 			first.End += startOffset
 			if first.Kind == lexer.TokenMap || first.Kind == lexer.TokenJSON {
-				if node.valueSpec != nil {
-					pairs := createPairs(input, first, node.valueSpec.MapSpec)
+				if pairNode.valueSpec != nil {
+					pairs := createPairs(input, first, pairNode.valueSpec.MapSpec)
 					mapNode := &nodeArgMap{
-						NodeArg: &NodeArg{
-							Node: &Node{
+						nodeArg: &nodeArg{
+							node: &node{
 								kind:  NodeKindCommandArg,
 								start: tValue.Start + startOffset,
 								end:   tValue.End + startOffset,
 							},
-							paramKind: node.valueSpec.Kind,
+							paramKind: pairNode.valueSpec.Kind,
 						},
-						mapSpec: node.valueSpec.MapSpec,
+						mapSpec: pairNode.valueSpec.MapSpec,
 					}
-					node.addChild(mapNode)
+					pairNode.addChild(mapNode)
 					for _, p := range pairs {
 						mapNode.addChild(p)
 					}
 				}
 			} else {
-				node.addChild(&NodeArgPairChild{
-					NodeArg: &NodeArg{
-						Node: &Node{
+				pairNode.addChild(&nodeArgPairChild{
+					nodeArg: &nodeArg{
+						node: &node{
 							kind:  NodeKindCommandArg,
 							start: tValue.Start + startOffset,
 							end:   tValue.End + startOffset,
@@ -212,9 +204,9 @@ func createPairs(input []rune, token lexer.Token, spec *MapSpec) []*NodeArgPair 
 		keyTokens = []lexer.Token{}
 		valueTokens = []lexer.Token{}
 		assignToken = lexer.Token{}
-		return node
+		return pairNode
 	}
-	pairs := []*NodeArgPair{}
+	pairs := []*nodeArgPair{}
 	state := 0
 	for t := range lex.Next() {
 		if t.Kind == lexer.TokenComment || t.Kind == lexer.TokenWhitespace {

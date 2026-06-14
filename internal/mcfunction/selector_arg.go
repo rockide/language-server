@@ -8,7 +8,7 @@ var permissionValueSpec = &ParameterSpec{
 	},
 }
 
-var SelectorArg = NewMapSpec(map[string]*ParameterSpec{
+var selectorArg = NewMapSpec(map[string]*ParameterSpec{
 	"c": {
 		Kind: ParameterKindInteger,
 	},

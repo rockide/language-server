@@ -1,6 +1,6 @@
 package mcfunction
 
-func WalkNodeTree(root INode, fn func(INode) bool) {
+func WalkNodeTree(root Node, fn func(Node) bool) {
 	if !fn(root) {
 		return
 	}
@@ -9,14 +9,14 @@ func WalkNodeTree(root INode, fn func(INode) bool) {
 	}
 }
 
-func IsInside(n INode, pos uint32) bool {
+func IsInside(n Node, pos uint32) bool {
 	start, end := n.Range()
 	return pos >= start && pos <= end
 }
 
-func NodeAt(root INode, pos uint32) INode {
-	var result INode
-	WalkNodeTree(root, func(n INode) bool {
+func NodeAt(root Node, pos uint32) Node {
+	var result Node
+	WalkNodeTree(root, func(n Node) bool {
 		matched := IsInside(n, pos)
 		if matched {
 			result = n

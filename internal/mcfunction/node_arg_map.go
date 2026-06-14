@@ -1,22 +1,18 @@
 package mcfunction
 
 type nodeArgMap struct {
-	*NodeArg
+	*nodeArg
 	mapSpec *MapSpec
 }
 
-func (n *nodeArgMap) addChild(child INode) {
+func (n *nodeArgMap) addChild(child Node) {
 	child.setParent(n)
 	child.setIndex(len(n.children))
 	n.children = append(n.children, child)
 }
 
-func (n *nodeArgMap) setParent(parent INode) {
+func (n *nodeArgMap) setParent(parent Node) {
 	n.parent = parent
-}
-
-func (n *nodeArgMap) setIndex(index int) {
-	n.index = index
 }
 
 func (n *nodeArgMap) MapSpec() *MapSpec {

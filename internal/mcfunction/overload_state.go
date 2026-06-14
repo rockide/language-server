@@ -54,7 +54,7 @@ func (o *overloadState) advance() {
 	o.index++
 }
 
-func (o *overloadState) parse(input []rune, tokens []lexer.Token) ([]INodeArg, error) {
+func (o *overloadState) parse(input []rune, tokens []lexer.Token) ([]ArgNode, error) {
 	if len(tokens) > 0 && o.eof() {
 		return nil, fmt.Errorf("unexpected extra arguments")
 	}
@@ -65,7 +65,7 @@ func (o *overloadState) parse(input []rune, tokens []lexer.Token) ([]INodeArg, e
 			return nil, fmt.Errorf("missing required arguments")
 		}
 	}
-	args := []INodeArg{}
+	args := []ArgNode{}
 	tokenIndex := 0
 	for tokenIndex < len(tokens) {
 		param, ok := o.Peek()
@@ -100,11 +100,11 @@ func (o *overloadState) parse(input []rune, tokens []lexer.Token) ([]INodeArg, e
 	return args, nil
 }
 
-func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, tokenIndex int, param ParameterSpec) (INodeArg, int, error) {
+func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, tokenIndex int, param ParameterSpec) (ArgNode, int, error) {
 	token := tokens[tokenIndex]
 	text := token.Text(input)
-	arg := &NodeArg{
-		Node: &Node{
+	arg := &nodeArg{
+		node: &node{
 			kind:  NodeKindCommandArg,
 			start: token.Start,
 			end:   token.End,
@@ -144,24 +144,24 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 					next := tokens[tokenIndex+1]
 					advance = 2
 					selArg := &nodeArgMap{
-						NodeArg: &NodeArg{
-							Node: &Node{
+						nodeArg: &nodeArg{
+							node: &node{
 								kind:  NodeKindCommandArg,
 								start: next.Start,
 								end:   next.End,
 							},
 							paramKind: ParameterKindSelectorArg,
 						},
-						mapSpec: SelectorArg,
+						mapSpec: selectorArg,
 					}
-					pairs := createPairs(input, next, SelectorArg)
+					pairs := createPairs(input, next, selectorArg)
 					if len(pairs) > 0 {
 						for _, p := range pairs {
 							selArg.addChild(p)
 						}
 					}
 					arg.addChild(selArg)
-					arg.Node.end = tokens[tokenIndex+1].End
+					arg.node.end = tokens[tokenIndex+1].End
 				}
 				return arg, advance, nil
 			}
@@ -169,7 +169,7 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 	case ParameterKindMap:
 		if token.Kind == lexer.TokenMap {
 			mapArg := &nodeArgMap{
-				NodeArg: arg,
+				nodeArg: arg,
 				mapSpec: param.MapSpec,
 			}
 			pairs := createPairs(input, token, param.MapSpec)
@@ -192,8 +192,8 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 		if tokenIndex+size-1 < len(tokens) {
 			if isValidRelatives(input, tokens[tokenIndex:tokenIndex+size]...) {
 				for i := range make([]int, size) {
-					arg.addChild(&NodeArg{
-						Node: &Node{
+					arg.addChild(&nodeArg{
+						node: &node{
 							kind:  NodeKindCommandArg,
 							start: tokens[tokenIndex+i].Start,
 							end:   tokens[tokenIndex+i].End,
@@ -201,42 +201,42 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 						paramKind: ParameterKindRelativeNumber,
 					})
 				}
-				arg.Node.end = tokens[tokenIndex+size-1].End
+				arg.node.end = tokens[tokenIndex+size-1].End
 				return arg, size, nil
 			}
 		}
 	case ParameterKindRange:
 		// 1. Number, Range, Number
 		if matchTokens(tokens, tokenIndex, lexer.TokenNumber, lexer.TokenRange, lexer.TokenNumber) {
-			arg.Node.end = tokens[tokenIndex+2].End
+			arg.node.end = tokens[tokenIndex+2].End
 			return arg, 3, nil
 		}
 		// 2. Range, Number
 		if matchTokens(tokens, tokenIndex, lexer.TokenRange, lexer.TokenNumber) {
-			arg.Node.end = tokens[tokenIndex+1].End
+			arg.node.end = tokens[tokenIndex+1].End
 			return arg, 2, nil
 		}
 		// 3. Number, Range
 		if matchTokens(tokens, tokenIndex, lexer.TokenNumber, lexer.TokenRange) {
-			arg.Node.end = tokens[tokenIndex+1].End
+			arg.node.end = tokens[tokenIndex+1].End
 			return arg, 2, nil
 		}
 		// 4. Bang, Number, Range, Number
 		if matchTokens(tokens, tokenIndex, lexer.TokenBang, lexer.TokenNumber, lexer.TokenRange, lexer.TokenNumber) {
-			arg.Node.start = tokens[tokenIndex].Start
-			arg.Node.end = tokens[tokenIndex+3].End
+			arg.node.start = tokens[tokenIndex].Start
+			arg.node.end = tokens[tokenIndex+3].End
 			return arg, 4, nil
 		}
 		// 5. Bang, Range, Number
 		if matchTokens(tokens, tokenIndex, lexer.TokenBang, lexer.TokenRange, lexer.TokenNumber) {
-			arg.Node.start = tokens[tokenIndex].Start
-			arg.Node.end = tokens[tokenIndex+2].End
+			arg.node.start = tokens[tokenIndex].Start
+			arg.node.end = tokens[tokenIndex+2].End
 			return arg, 3, nil
 		}
 		// 6. Bang, Number, Range
 		if matchTokens(tokens, tokenIndex, lexer.TokenBang, lexer.TokenNumber, lexer.TokenRange) {
-			arg.Node.start = tokens[tokenIndex].Start
-			arg.Node.end = tokens[tokenIndex+2].End
+			arg.node.start = tokens[tokenIndex].Start
+			arg.node.end = tokens[tokenIndex+2].End
 			return arg, 3, nil
 		}
 	case ParameterKindSuffixedInteger:
@@ -245,7 +245,7 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 			suffix := param.Suffix
 			suffixText := suffixToken.Text(input)
 			if suffixText == suffix {
-				arg.Node.end = suffixToken.End
+				arg.node.end = suffixToken.End
 				return arg, 2, nil
 			}
 		}
@@ -255,9 +255,9 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 			return arg, 1, nil
 		}
 	case ParameterKindChainedCommand:
-		arg := &NodeArgCommand{
-			NodeCommand: &NodeCommand{
-				Node: &Node{
+		arg := &nodeArgCommand{
+			nodeCommand: &nodeCommand{
+				node: &node{
 					kind:  NodeKindCommandArg,
 					start: token.Start,
 					end:   o.eol,
@@ -284,7 +284,7 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 			overloadStates = append(overloadStates, state)
 			args, _ := state.parse(input, rest)
 			if state.matched {
-				arg.children = make([]INode, 0, len(args))
+				arg.children = make([]Node, 0, len(args))
 				for _, a := range args {
 					arg.addChild(a)
 				}
@@ -292,8 +292,8 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 		}
 		if len(arg.children) == 0 {
 			for i := range rest {
-				arg.addChild(&NodeArg{
-					Node: &Node{
+				arg.addChild(&nodeArg{
+					node: &node{
 						kind:  NodeKindCommandArg,
 						start: rest[i].Start,
 						end:   rest[i].End,
@@ -306,8 +306,8 @@ func (o *overloadState) matchParameter(input []rune, tokens []lexer.Token, token
 	case ParameterKindCommand:
 		rest := tokens[tokenIndex:]
 		commandNode := parseCommand(rest, input, o.commands, o.options, o.eol)
-		arg := &NodeArgCommand{
-			NodeCommand: commandNode,
+		arg := &nodeArgCommand{
+			nodeCommand: commandNode,
 			paramKind:   ParameterKindCommand,
 		}
 		return arg, math.MaxInt32, nil

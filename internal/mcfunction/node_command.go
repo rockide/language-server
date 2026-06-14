@@ -1,31 +1,27 @@
 package mcfunction
 
-type NodeCommand struct {
-	*Node
+type nodeCommand struct {
+	*node
 	name           string
 	spec           *Spec
 	overloadStates []*overloadState
 }
 
-func (n *NodeCommand) addChild(child INode) {
+func (n *nodeCommand) addChild(child Node) {
 	child.setParent(n)
 	child.setIndex(len(n.children))
 	n.children = append(n.children, child)
 }
 
-func (n *NodeCommand) setParent(parent INode) {
+func (n *nodeCommand) setParent(parent Node) {
 	n.parent = parent
 }
 
-func (n *NodeCommand) setIndex(index int) {
-	n.index = index
-}
-
-func (n *NodeCommand) CommandName() string {
+func (n *nodeCommand) CommandName() string {
 	return n.name
 }
 
-func (n *NodeCommand) Args() []INode {
+func (n *nodeCommand) Args() []Node {
 	if len(n.children) == 0 {
 		return nil
 	}
@@ -36,15 +32,15 @@ func (n *NodeCommand) Args() []INode {
 	return n.children[1:]
 }
 
-func (n *NodeCommand) Spec() *Spec {
+func (n *nodeCommand) Spec() *Spec {
 	return n.spec
 }
 
-func (n *NodeCommand) OverloadStates() []*overloadState {
+func (n *nodeCommand) OverloadStates() []*overloadState {
 	return n.overloadStates
 }
 
-func (n *NodeCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
+func (n *nodeCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
 	for _, o := range n.overloadStates {
 		if !o.matched {
 			continue
@@ -56,7 +52,7 @@ func (n *NodeCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
 	return ParameterSpec{}, false
 }
 
-func (n *NodeCommand) IsValid() bool {
+func (n *nodeCommand) IsValid() bool {
 	if n.Kind() == NodeKindInvalidCommand {
 		return false
 	}

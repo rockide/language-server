@@ -20,42 +20,42 @@ const (
 	NodeKindCommandArg
 )
 
-type Node struct {
+type node struct {
 	kind     NodeKind
-	parent   INode
+	parent   Node
 	index    int
-	children []INode
+	children []Node
 	start    uint32
 	end      uint32
 }
 
-func (n *Node) addChild(child INode) {
+func (n *node) addChild(child Node) {
 	child.setParent(n)
 	child.setIndex(len(n.children))
 	n.children = append(n.children, child)
 }
 
-func (n *Node) setParent(parent INode) {
+func (n *node) setParent(parent Node) {
 	n.parent = parent
 }
 
-func (n *Node) setIndex(index int) {
+func (n *node) setIndex(index int) {
 	n.index = index
 }
 
-func (n *Node) Kind() NodeKind {
+func (n *node) Kind() NodeKind {
 	return n.kind
 }
 
-func (n *Node) Range() (start, end uint32) {
+func (n *node) Range() (start, end uint32) {
 	return n.start, n.end
 }
 
-func (n *Node) Text(src []rune) string {
+func (n *node) Text(src []rune) string {
 	return string(src[n.start:n.end])
 }
 
-func (n *Node) PrevSibling() INode {
+func (n *node) PrevSibling() Node {
 	if n.parent == nil || n.index == 0 {
 		return nil
 	}
@@ -66,25 +66,25 @@ func (n *Node) PrevSibling() INode {
 	return n.parent.Children()[i]
 }
 
-func (n *Node) NextSibling() INode {
+func (n *node) NextSibling() Node {
 	if n.parent == nil || n.index+1 >= len(n.parent.Children()) {
 		return nil
 	}
 	return n.parent.Children()[n.index+1]
 }
 
-func (n *Node) Parent() INode {
+func (n *node) Parent() Node {
 	return n.parent
 }
 
-func (n *Node) Index() int {
+func (n *node) Index() int {
 	return n.index
 }
 
-func (n *Node) Children() []INode {
+func (n *node) Children() []Node {
 	return n.children
 }
 
-func (n *Node) IsInside(pos uint32) bool {
+func (n *node) IsInside(pos uint32) bool {
 	return n.start <= pos && pos < n.end
 }

@@ -1,6 +1,6 @@
 package mcfunction
 
-var EventAliasSpec = &Spec{
+var eventAliasSpec = &Spec{
 	Description: "Alias for 'event entity' command. Can be only used in behavior packs for animation and animation controller",
 	Overloads: []SpecOverload{
 		{

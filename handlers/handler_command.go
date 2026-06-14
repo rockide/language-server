@@ -39,8 +39,8 @@ func (h *CommandHandler) Parse(uri protocol.DocumentURI) error {
 func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) error {
 	content := document.GetContent()
 	root, _ := h.Parser.Parse(content)
-	mcfunction.WalkNodeTree(root, func(i mcfunction.INode) bool {
-		nodeSpec, ok := i.(mcfunction.INodeParam)
+	mcfunction.WalkNodeTree(root, func(i mcfunction.Node) bool {
+		nodeSpec, ok := i.(mcfunction.ParamNode)
 		if !ok {
 			return true
 		}
@@ -115,7 +115,7 @@ func (h *CommandHandler) Completions(document *textdocument.TextDocument, positi
 		}
 		result = h.commandCompletions(nodeRange, prefix)
 	case mcfunction.NodeKindCommandArg:
-		arg, ok := node.(mcfunction.INodeArg)
+		arg, ok := node.(mcfunction.ArgNode)
 		if ok {
 			switch arg.ParamKind() {
 			case mcfunction.ParameterKindMap, mcfunction.ParameterKindMapPair, mcfunction.ParameterKindSelectorArg, mcfunction.ParameterKindMapJSON:
@@ -130,19 +130,19 @@ func (h *CommandHandler) Completions(document *textdocument.TextDocument, positi
 			}
 		}
 		invalid := node.Parent().Kind() == mcfunction.NodeKindInvalidCommand
-		if _, ok := node.(mcfunction.INodeCommand); invalid || !ok {
+		if _, ok := node.(mcfunction.CommandNode); invalid || !ok {
 			root, _ := h.Parser.Parse(line[:rStart])
 			n := mcfunction.NodeAt(root, rStart)
-			if n, ok := n.(mcfunction.INodeCommand); ok {
+			if n, ok := n.(mcfunction.CommandNode); ok {
 				node = n
 				cursorRange = nodeRange
 			}
 		}
 		fallthrough
 	case mcfunction.NodeKindCommand:
-		nodeCommand, ok := node.(mcfunction.INodeCommand)
+		nodeCommand, ok := node.(mcfunction.CommandNode)
 		if !ok {
-			log.Printf("Failed to cast node to INodeCommand")
+			log.Printf("Failed to cast node to CommandNode")
 			return result
 		}
 		result = h.paramCompletions(nodeCommand, cursorRange)
@@ -174,7 +174,7 @@ func (h *CommandHandler) commandCompletions(editRange protocol.Range, prefix str
 	return result
 }
 
-func (h *CommandHandler) innerCompletions(node mcfunction.INodeCommand, paramSpec *mcfunction.ParameterSpec, editRange protocol.Range) []protocol.CompletionItem {
+func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec *mcfunction.ParameterSpec, editRange protocol.Range) []protocol.CompletionItem {
 	result := []protocol.CompletionItem{}
 	set := mapset.NewThreadUnsafeSet[string]()
 	escape := func(s string) string {
@@ -340,7 +340,7 @@ func (h *CommandHandler) innerCompletions(node mcfunction.INodeCommand, paramSpe
 	return result
 }
 
-func (h *CommandHandler) paramCompletions(node mcfunction.INodeCommand, editRange protocol.Range) []protocol.CompletionItem {
+func (h *CommandHandler) paramCompletions(node mcfunction.CommandNode, editRange protocol.Range) []protocol.CompletionItem {
 	return h.innerCompletions(node, nil, editRange)
 }
 
@@ -348,7 +348,7 @@ func (h *CommandHandler) paramSpecCompletions(spec *mcfunction.ParameterSpec, ed
 	return h.innerCompletions(nil, spec, editRange)
 }
 
-func (h *CommandHandler) mapCompletions(node mcfunction.INodeArg, cursorRange protocol.Range, nodeRange protocol.Range) []protocol.CompletionItem {
+func (h *CommandHandler) mapCompletions(node mcfunction.ArgNode, cursorRange protocol.Range, nodeRange protocol.Range) []protocol.CompletionItem {
 	keyCompletions := func(spec *mcfunction.ParameterSpec, keys []string, editRange protocol.Range) []protocol.CompletionItem {
 		var result []protocol.CompletionItem
 		for _, key := range keys {
@@ -369,10 +369,10 @@ func (h *CommandHandler) mapCompletions(node mcfunction.INodeArg, cursorRange pr
 		return result
 	}
 	switch n := node.(type) {
-	case mcfunction.INodeArgMap:
+	case mcfunction.MapNode:
 		spec, _ := n.MapSpec().KeySpec()
 		return keyCompletions(spec, n.MapSpec().Keys(), cursorRange)
-	case mcfunction.INodeArgPairChild:
+	case mcfunction.PairChildNode:
 		kind := n.PairKind()
 		switch kind {
 		case mcfunction.PairKindKey:
@@ -403,7 +403,7 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	nodeSpec, ok := node.(mcfunction.INodeParam)
+	nodeSpec, ok := node.(mcfunction.ParamNode)
 	if !ok {
 		return result
 	}
@@ -459,7 +459,7 @@ func (h *CommandHandler) PrepareRename(document *textdocument.TextDocument, posi
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	nodeSpec, ok := node.(mcfunction.INodeParam)
+	nodeSpec, ok := node.(mcfunction.ParamNode)
 	if !ok {
 		return nil
 	}
@@ -498,7 +498,7 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	nodeSpec, ok := node.(mcfunction.INodeParam)
+	nodeSpec, ok := node.(mcfunction.ParamNode)
 	if !ok {
 		return nil
 	}
@@ -548,11 +548,11 @@ func (h *CommandHandler) Hover(document *textdocument.TextDocument, position pro
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	var commandNode mcfunction.INodeCommand
+	var commandNode mcfunction.CommandNode
 	switch n := node.(type) {
-	case mcfunction.INodeCommand:
+	case mcfunction.CommandNode:
 		commandNode = n
-	case mcfunction.INodeArg:
+	case mcfunction.ArgNode:
 		if parent := n.CommandNode(); parent != nil && parent.IsValid() {
 			commandNode = parent
 		}
@@ -584,18 +584,18 @@ func (h *CommandHandler) SignatureHelp(document *textdocument.TextDocument, posi
 		return nil
 	}
 	node := mcfunction.NodeAt(root, rOffset)
-	var commandNode mcfunction.INodeCommand
+	var commandNode mcfunction.CommandNode
 	switch n := node.(type) {
-	case mcfunction.INodeCommand:
+	case mcfunction.CommandNode:
 		commandNode = n
-	case mcfunction.INodeArg:
+	case mcfunction.ArgNode:
 		if parent := n.CommandNode(); parent != nil && parent.IsValid() {
 			commandNode = parent
 		} else {
 			s, _ := n.Range()
 			root, _ := h.Parser.Parse(line[:s])
 			node = mcfunction.NodeAt(root, s)
-			if n, ok := node.(mcfunction.INodeCommand); ok {
+			if n, ok := node.(mcfunction.CommandNode); ok {
 				commandNode = n
 			}
 		}
@@ -638,7 +638,7 @@ func (h *CommandHandler) ComputeSemanticTokens(document *textdocument.TextDocume
 	root, _ := h.Parser.Parse(content)
 	tokens := []semtok.Token{}
 	molangRanges := []protocol.Range{}
-	isMolang := func(node mcfunction.INodeArg) bool {
+	isMolang := func(node mcfunction.ArgNode) bool {
 		param, ok := node.ParamSpec()
 		if ok && slices.Contains(param.Tags, mcfunction.TagMolang) {
 			start, end := node.Range()
@@ -651,14 +651,14 @@ func (h *CommandHandler) ComputeSemanticTokens(document *textdocument.TextDocume
 		}
 		return false
 	}
-	mcfunction.WalkNodeTree(root, func(i mcfunction.INode) bool {
+	mcfunction.WalkNodeTree(root, func(i mcfunction.Node) bool {
 		start, end := i.Range()
 		length := end - start
 		pA := document.PositionAt(start)
 		pB := document.PositionAt(end)
 		switch n := i.(type) {
-		case mcfunction.INodeCommand:
-			if p, ok := i.(mcfunction.INodeArg); n.Kind() != mcfunction.NodeKindCommandArg || (ok && p.ParamKind() == mcfunction.ParameterKindCommand) {
+		case mcfunction.CommandNode:
+			if p, ok := i.(mcfunction.ArgNode); n.Kind() != mcfunction.NodeKindCommandArg || (ok && p.ParamKind() == mcfunction.ParameterKindCommand) {
 				if start < uint32(len(content)) && content[start] == '/' {
 					tokens = append(tokens, semtok.Token{
 						Type:  semtok.TokOperator,
@@ -675,7 +675,7 @@ func (h *CommandHandler) ComputeSemanticTokens(document *textdocument.TextDocume
 					Len:   uint32(len(n.CommandName())),
 				})
 			}
-		case mcfunction.INodeArg:
+		case mcfunction.ArgNode:
 			if isMolang(n) {
 				tokens = append(tokens, semtok.Token{
 					Type:  semtok.TokString,
@@ -746,7 +746,7 @@ type parsedCommandLine struct {
 	Content        []rune
 	StartOffset    uint32
 	RelativeOffset uint32
-	Root           mcfunction.INode
+	Root           mcfunction.Node
 }
 
 var commandParamTokenMap = map[mcfunction.ParameterKind]semtok.Type{
@@ -768,10 +768,10 @@ var commandParamTokenMap = map[mcfunction.ParameterKind]semtok.Type{
 
 type commandEntry struct {
 	Store         *stores.SymbolStore
-	Source        func(node mcfunction.INode) []core.Symbol
-	References    func(node mcfunction.INode) []core.Symbol
+	Source        func(node mcfunction.Node) []core.Symbol
+	References    func(node mcfunction.Node) []core.Symbol
 	Transform     func(s string) string
-	Scope         func(node mcfunction.INode) string
+	Scope         func(node mcfunction.Node) string
 	Namespaced    bool
 	DisableRename bool
 }
@@ -779,118 +779,118 @@ type commandEntry struct {
 var commandEntries = map[string]commandEntry{
 	mcfunction.TagAimAssistId: {
 		Store: stores.AimAssistCategory.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.AimAssistCategory.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.AimAssistCategory.References.Get()
 		},
 	},
 	mcfunction.TagBiomeId: {
 		Store: stores.BiomeId.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.BiomeId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.BiomeId.References.Get()
 		},
 	},
 	mcfunction.TagBlockId: {
 		Store: stores.ItemId.References,
-		Scope: func(node mcfunction.INode) string {
+		Scope: func(node mcfunction.Node) string {
 			return "block"
 		},
 		Namespaced: true,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.ItemId.Source.Get("block")
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.ItemId.References.Get("block")
 		},
 	},
 	mcfunction.TagBlockState: {
 		Store: stores.BlockState.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.BlockState.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.BlockState.References.Get()
 		},
 	},
 	mcfunction.TagCameraId: {
 		Store: stores.CameraId.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.CameraId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.CameraId.References.Get()
 		},
 	},
 	mcfunction.TagClientAnimationId: {
 		Store: stores.ClientAnimation.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.ClientAnimation.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.ClientAnimation.References.Get()
 		},
 	},
 	mcfunction.TagDialogueId: {
 		Store: stores.DialogueId.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.DialogueId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.DialogueId.References.Get()
 		},
 	},
 	mcfunction.TagEntityEvent: {
 		DisableRename: true,
 		Store:         stores.EntityEvent.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.EntityEvent.Source.Get()
 		},
 	},
 	mcfunction.TagEntityId: {
 		Store:      stores.EntityId.References,
 		Namespaced: true,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.EntityId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.EntityId.References.Get()
 		},
 	},
 	mcfunction.TagFeatureId: {
 		Store: stores.FeatureId.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.FeatureId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.FeatureId.References.Get()
 		},
 	},
 	mcfunction.TagFeatureRuleId: {
 		Store: stores.FeatureRuleId.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.FeatureRuleId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.FeatureRuleId.References.Get()
 		},
 	},
 	mcfunction.TagFogId: {
 		Store: stores.Fog.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.Fog.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.Fog.References.Get()
 		},
 	},
 	mcfunction.TagFunctionFile: {
 		DisableRename: true,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.McFunctionPath.Get()
 		},
 		Transform: func(s string) string {
@@ -900,34 +900,34 @@ var commandEntries = map[string]commandEntry{
 	mcfunction.TagItemId: {
 		Store:      stores.ItemId.References,
 		Namespaced: true,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.ItemId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.ItemId.References.Get()
 		},
 	},
 	mcfunction.TagJigsawId: {
 		Store: stores.WorldgenJigsaw.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.WorldgenJigsaw.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.WorldgenJigsaw.References.Get()
 		},
 	},
 	mcfunction.TagJigsawTemplatePoolId: {
 		Store: stores.WorldgenTemplatePool.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.WorldgenTemplatePool.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.WorldgenTemplatePool.References.Get()
 		},
 	},
 	mcfunction.TagLootTableFile: {
 		DisableRename: true,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.LootTablePath.Get()
 		},
 		Transform: func(s string) string {
@@ -938,67 +938,67 @@ var commandEntries = map[string]commandEntry{
 	},
 	mcfunction.TagMusicId: {
 		Store: stores.MusicDefinition.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.MusicDefinition.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.MusicDefinition.References.Get()
 		},
 	},
 	mcfunction.TagProvidedFogId: {
 		Store: stores.ProvidedFogId.Source,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.ProvidedFogId.Source.Get()
 		},
 	},
 	mcfunction.TagRecipeId: {
 		Store: stores.RecipeId.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.RecipeId.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.RecipeId.References.Get()
 		},
 	},
 	mcfunction.TagSoundId: {
 		Store: stores.SoundDefinition.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.SoundDefinition.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.SoundDefinition.References.Get()
 		},
 	},
 	mcfunction.TagStructureFile: {
 		DisableRename: true,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.StructurePath.Get()
 		},
 	},
 	mcfunction.TagTagId: {
 		Store: stores.Tag.Source,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.Tag.Source.Get()
 		},
 	},
 	mcfunction.TagTickingAreaId: {
 		Store: stores.TickingArea.Source,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.TickingArea.Source.Get()
 		},
 	},
 	mcfunction.TagTypeFamilyId: {
 		Store: stores.EntityFamily.References,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.EntityFamily.Source.Get()
 		},
-		References: func(node mcfunction.INode) []core.Symbol {
+		References: func(node mcfunction.Node) []core.Symbol {
 			return stores.EntityFamily.References.Get()
 		},
 	},
 	mcfunction.TagScoreboardObjectiveId: {
 		Store: stores.ScoreboardObjective.Source,
-		Source: func(node mcfunction.INode) []core.Symbol {
+		Source: func(node mcfunction.Node) []core.Symbol {
 			return stores.ScoreboardObjective.Source.Get()
 		},
 	},

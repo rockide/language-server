@@ -52,13 +52,13 @@ func (p *Parser) GetSelectors() map[string]bool {
 	return getSelectors(p.options)
 }
 
-func (p *Parser) Parse(input []rune) (INode, error) {
+func (p *Parser) Parse(input []rune) (Node, error) {
 	if len(p.commands) == 0 && !p.options.EventAlias {
 		return nil, fmt.Errorf("no commands registered")
 	}
 	lex := lexer.New(input)
 	lex.SetEscapedQuotes(p.options.EscapeQuotes)
-	root := &Node{
+	root := &node{
 		kind: NodeKindFile,
 	}
 	tokens := []lexer.Token{}
@@ -67,7 +67,7 @@ func (p *Parser) Parse(input []rune) (INode, error) {
 		if len(tokens) == 0 {
 			return
 		}
-		var node *NodeCommand
+		var node *nodeCommand
 		if p.options.EventAlias && tokens[0].Kind == lexer.TokenSelector {
 			node = parseEventAlias(tokens, input)
 		} else {
@@ -82,7 +82,7 @@ func (p *Parser) Parse(input []rune) (INode, error) {
 		case lexer.TokenWhitespace:
 			continue
 		case lexer.TokenComment:
-			root.addChild(&Node{
+			root.addChild(&node{
 				kind:  NodeKindComment,
 				start: token.Start,
 				end:   token.End,
@@ -99,33 +99,33 @@ func (p *Parser) Parse(input []rune) (INode, error) {
 	return root, nil
 }
 
-func parseEventAlias(tokens []lexer.Token, input []rune) *NodeCommand {
-	node := &NodeCommand{
-		Node: &Node{
+func parseEventAlias(tokens []lexer.Token, input []rune) *nodeCommand {
+	cmdNode := &nodeCommand{
+		node: &node{
 			kind:  NodeKindInvalidCommand,
 			start: tokens[0].Start,
 		},
-		overloadStates: make([]*overloadState, len(EventAliasSpec.Overloads)),
+		overloadStates: make([]*overloadState, len(eventAliasSpec.Overloads)),
 	}
 	state := &overloadState{
-		spec:    EventAliasSpec,
-		ov:      &EventAliasSpec.Overloads[0],
+		spec:    eventAliasSpec,
+		ov:      &eventAliasSpec.Overloads[0],
 		matched: true,
 	}
 	args, _ := state.parse(input, tokens)
 	if state.matched {
-		node.kind = NodeKindCommand
-		node.spec = EventAliasSpec
-		node.children = make([]INode, 0, len(args))
+		cmdNode.kind = NodeKindCommand
+		cmdNode.spec = eventAliasSpec
+		cmdNode.children = make([]Node, 0, len(args))
 		for _, arg := range args {
-			node.addChild(arg)
+			cmdNode.addChild(arg)
 		}
 	}
-	node.overloadStates[0] = state
-	return node
+	cmdNode.overloadStates[0] = state
+	return cmdNode
 }
 
-func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec, options ParserOptions, eol uint32) *NodeCommand {
+func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec, options ParserOptions, eol uint32) *nodeCommand {
 	startIndex := 1
 	first := tokens[0]
 	commandInput := first.Text(input)
@@ -133,8 +133,8 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 		commandInput = commandInput[1:]
 	}
 	spec, ok := commands[commandInput]
-	node := &NodeCommand{
-		Node: &Node{
+	cmdNode := &nodeCommand{
+		node: &node{
 			kind:  NodeKindInvalidCommand,
 			start: first.Start,
 			end:   eol,
@@ -142,8 +142,8 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 	}
 	addDefaultArgs := func() {
 		for i := startIndex; i < len(tokens); i++ {
-			node.addChild(&NodeArg{
-				Node: &Node{
+			cmdNode.addChild(&nodeArg{
+				node: &node{
 					kind:  NodeKindCommandArg,
 					start: tokens[i].Start,
 					end:   tokens[i].End,
@@ -151,28 +151,28 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 			})
 		}
 	}
-	node.addChild(&Node{
+	cmdNode.addChild(&node{
 		kind:  NodeKindCommandLit,
 		start: first.Start,
 		end:   first.End,
 	})
 	if !ok {
-		node.name = commandInput
+		cmdNode.name = commandInput
 		addDefaultArgs()
-		return node
+		return cmdNode
 	}
 	if len(spec.Overloads) == 0 && len(tokens) > startIndex {
 		// Immediately invalidate if no overloads exist but arguments are provided
-		node.name = commandInput
-		node.spec = spec
+		cmdNode.name = commandInput
+		cmdNode.spec = spec
 		addDefaultArgs()
-		return node
+		return cmdNode
 	}
 	if len(spec.Overloads) == 0 && len(tokens) == startIndex {
-		node.kind = NodeKindCommand
-		node.name = commandInput
-		node.spec = spec
-		return node
+		cmdNode.kind = NodeKindCommand
+		cmdNode.name = commandInput
+		cmdNode.spec = spec
+		return cmdNode
 	}
 	overloadStates := make([]*overloadState, len(spec.Overloads))
 	for i := range spec.Overloads {
@@ -187,21 +187,21 @@ func parseCommand(tokens []lexer.Token, input []rune, commands map[string]*Spec,
 		overloadStates[i] = state
 		args, _ := state.parse(input, tokens[startIndex:])
 		if state.matched {
-			node.kind = NodeKindCommand
-			node.name = commandInput
-			node.spec = spec
-			node.children = make([]INode, 0, len(args))
+			cmdNode.kind = NodeKindCommand
+			cmdNode.name = commandInput
+			cmdNode.spec = spec
+			cmdNode.children = make([]Node, 0, len(args))
 			for _, arg := range args {
-				node.addChild(arg)
+				cmdNode.addChild(arg)
 			}
 		}
 	}
-	if node.kind == NodeKindInvalidCommand {
-		node.name = commandInput
-		node.spec = spec
+	if cmdNode.kind == NodeKindInvalidCommand {
+		cmdNode.name = commandInput
+		cmdNode.spec = spec
 		addDefaultArgs()
 	} else {
-		node.overloadStates = overloadStates
+		cmdNode.overloadStates = overloadStates
 	}
-	return node
+	return cmdNode
 }

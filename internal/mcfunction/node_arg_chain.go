@@ -1,76 +1,26 @@
 package mcfunction
 
-type NodeArgCommand struct {
-	*NodeCommand
+type nodeArgCommand struct {
+	*nodeCommand
 	paramKind ParameterKind
 }
 
-func (n *NodeArgCommand) addChild(child INode) {
+func (n *nodeArgCommand) addChild(child Node) {
 	child.setParent(n)
 	child.setIndex(len(n.children))
 	n.children = append(n.children, child)
 }
 
-func (n *NodeArgCommand) setParent(parent INode) {
+func (n *nodeArgCommand) setParent(parent Node) {
 	n.parent = parent
 }
 
-func (n *NodeArgCommand) setIndex(index int) {
-	n.index = index
-}
-
-func (n *NodeArgCommand) Kind() NodeKind {
-	return NodeKindCommandArg
-}
-
-func (n *NodeArgCommand) Range() (start, end uint32) {
-	return n.start, n.end
-}
-
-func (n *NodeArgCommand) Text(src []rune) string {
-	return string(src[n.start:n.end])
-}
-
-func (n *NodeArgCommand) PrevSibling() INode {
-	if n.parent == nil || n.index == 0 {
-		return nil
-	}
-	i := n.index - 1
-	if i < 0 || i >= len(n.parent.Children()) {
-		return nil
-	}
-	return n.parent.Children()[i]
-}
-
-func (n *NodeArgCommand) NextSibling() INode {
-	if n.parent == nil {
-		return nil
-	}
-	i := n.index + 1
-	if i < 0 || i >= len(n.parent.Children()) {
-		return nil
-	}
-	return n.parent.Children()[i]
-}
-
-func (n *NodeArgCommand) Parent() INode {
-	return n.parent
-}
-
-func (n *NodeArgCommand) Index() int {
-	return n.index
-}
-
-func (n *NodeArgCommand) Children() []INode {
-	return n.children
-}
-
-func (n *NodeArgCommand) ParamKind() ParameterKind {
+func (n *nodeArgCommand) ParamKind() ParameterKind {
 	return n.paramKind
 }
 
-func (n *NodeArgCommand) ParamSpec() (ParameterSpec, bool) {
-	commandNode, ok := n.parent.(INodeCommand)
+func (n *nodeArgCommand) ParamSpec() (ParameterSpec, bool) {
+	commandNode, ok := n.parent.(CommandNode)
 	if !ok {
 		return ParameterSpec{}, false
 	}
@@ -78,27 +28,23 @@ func (n *NodeArgCommand) ParamSpec() (ParameterSpec, bool) {
 	return commandNode.ParamSpecAt(argIndex)
 }
 
-func (n *NodeArgCommand) IsInside(pos uint32) bool {
-	return n.start <= pos && pos < n.end
-}
-
-func (n *NodeArgCommand) CommandName() string {
+func (n *nodeArgCommand) CommandName() string {
 	return n.name
 }
 
-func (n *NodeArgCommand) Args() []INode {
+func (n *nodeArgCommand) Args() []Node {
 	return n.children
 }
 
-func (n *NodeArgCommand) Spec() *Spec {
+func (n *nodeArgCommand) Spec() *Spec {
 	return n.spec
 }
 
-func (n *NodeArgCommand) OverloadStates() []*overloadState {
+func (n *nodeArgCommand) OverloadStates() []*overloadState {
 	return n.overloadStates
 }
 
-func (n *NodeArgCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
+func (n *nodeArgCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
 	for _, o := range n.overloadStates {
 		if !o.matched {
 			continue
@@ -110,7 +56,7 @@ func (n *NodeArgCommand) ParamSpecAt(index int) (ParameterSpec, bool) {
 	return ParameterSpec{}, false
 }
 
-func (n *NodeArgCommand) IsValid() bool {
+func (n *nodeArgCommand) IsValid() bool {
 	for _, o := range n.overloadStates {
 		if o.matched {
 			return true
@@ -119,6 +65,6 @@ func (n *NodeArgCommand) IsValid() bool {
 	return false
 }
 
-func (n *NodeArgCommand) CommandNode() INodeCommand {
+func (n *nodeArgCommand) CommandNode() CommandNode {
 	return n
 }

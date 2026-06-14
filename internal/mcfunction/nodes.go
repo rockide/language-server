@@ -1,49 +1,49 @@
 package mcfunction
 
-type INode interface {
-	addChild(child INode)
-	setParent(parent INode)
+type Node interface {
+	addChild(child Node)
+	setParent(parent Node)
 	setIndex(index int)
 
 	Kind() NodeKind
 	Range() (start, end uint32)
 	Text([]rune) string
-	PrevSibling() INode
-	NextSibling() INode
-	Parent() INode
+	PrevSibling() Node
+	NextSibling() Node
+	Parent() Node
 	Index() int
-	Children() []INode
+	Children() []Node
 	IsInside(pos uint32) bool
 }
 
-type INodeParam interface {
+type ParamNode interface {
 	ParamSpec() (ParameterSpec, bool)
 }
 
-type INodeArg interface {
-	INode
-	INodeParam
+type ArgNode interface {
+	Node
+	ParamNode
 	ParamKind() ParameterKind
-	CommandNode() INodeCommand
+	CommandNode() CommandNode
 }
 
-type INodeArgMap interface {
-	INodeArg
+type MapNode interface {
+	ArgNode
 	MapSpec() *MapSpec
 }
 
-type INodeArgPairChild interface {
-	INodeArg
+type PairChildNode interface {
+	ArgNode
 	PairKind() PairKind
 	Keys() []string
 	KeySpec() (ParameterSpec, bool)
 	ValueSpec() (ParameterSpec, bool)
 }
 
-type INodeCommand interface {
-	INode
+type CommandNode interface {
+	Node
 	CommandName() string
-	Args() []INode
+	Args() []Node
 	Spec() *Spec
 	OverloadStates() []*overloadState
 	ParamSpecAt(index int) (ParameterSpec, bool)
