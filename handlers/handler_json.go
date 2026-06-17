@@ -73,7 +73,6 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 	root, _ := jsonc.ParseTree(document.GetText(), nil)
 
-	commandRanges := []protocol.Range{}
 	for _, entry := range j.CommandEntry.Path {
 		for _, node := range entry.GetNodes(root) {
 			nodeValue, ok := node.Value.(string)
@@ -85,15 +84,13 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 					continue
 				}
 			}
-			commandRanges = append(commandRanges, protocol.Range{
+			r := protocol.Range{
 				Start: document.PositionAt(node.Offset + 1),
 				End:   document.PositionAt(node.Offset + node.Length - 1),
-			})
+			}
+			virtualDocument := document.CreateVirtualDocument(r)
+			j.CommandEntry.Handler.ParseDocument(virtualDocument)
 		}
-	}
-	if len(commandRanges) > 0 {
-		commandDocument := document.CreateVirtualDocument(commandRanges...)
-		j.CommandEntry.Handler.ParseDocument(commandDocument)
 	}
 
 	for _, entry := range j.Entries {
@@ -492,7 +489,6 @@ func (j *JsonHandler) SemanticTokens(document *textdocument.TextDocument) *proto
 	tokens := []semtok.Token{}
 
 	molangRanges := []protocol.Range{}
-	commandRanges := []protocol.Range{}
 	jsonc.Visit(document.GetText(), &jsonc.Visitor{
 		OnLiteralValue: func(value any, offset, length, startLine, startCharacter uint32, pathSupplier func() jsonc.Path) {
 			text, ok := value.(string)
@@ -515,7 +511,8 @@ func (j *JsonHandler) SemanticTokens(document *textdocument.TextDocument) *proto
 					Start: document.PositionAt(startOffset),
 					End:   document.PositionAt(endOffset),
 				}
-				commandRanges = append(commandRanges, r)
+				virtualDocument := document.CreateVirtualDocument(r)
+				tokens = append(tokens, entry.Handler.ComputeSemanticTokens(virtualDocument)...)
 				return
 			}
 			if j.isMolangSemanticLocation(&location) {
@@ -528,11 +525,6 @@ func (j *JsonHandler) SemanticTokens(document *textdocument.TextDocument) *proto
 	}, nil)
 	molangDocument := document.CreateVirtualDocument(molangRanges...)
 	tokens = append(tokens, Molang.ComputeSemanticTokens(molangDocument)...)
-
-	if len(commandRanges) > 0 {
-		commandDocument := document.CreateVirtualDocument(commandRanges...)
-		tokens = append(tokens, j.CommandEntry.Handler.ComputeSemanticTokens(commandDocument)...)
-	}
 
 	return &protocol.SemanticTokens{
 		Data: semtok.Encode(tokens, tokenType, tokenModifier),
