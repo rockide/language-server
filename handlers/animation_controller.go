@@ -132,4 +132,14 @@ var AnimationController = &JsonHandler{
 		shared.JsonValue("animation_controllers/*/states/*/on_entry/*"),
 		shared.JsonValue("animation_controllers/*/states/*/on_exit/*"),
 	},
+	CommandEntry: JsonCommandEntry{
+		Handler:      EmbedEventCommand,
+		RequireSlash: true,
+		Path: []shared.JsonPath{
+			shared.JsonValue("animation_controllers/*/states/*/animations/*/*"),
+			shared.JsonValue("animation_controllers/*/states/*/transitions/*/*"),
+			shared.JsonValue("animation_controllers/*/states/*/on_entry/*"),
+			shared.JsonValue("animation_controllers/*/states/*/on_exit/*"),
+		},
+	},
 }

@@ -33,4 +33,9 @@ var Animation = &JsonHandler{
 		shared.JsonValue("animations/*/anim_time_update"),
 		shared.JsonValue("animations/*/timeline/*/*"),
 	},
+	CommandEntry: JsonCommandEntry{
+		Handler:      EmbedEventCommand,
+		RequireSlash: true,
+		Path:         []shared.JsonPath{shared.JsonValue("animations/*/timeline/*/*")},
+	},
 }

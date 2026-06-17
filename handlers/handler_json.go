@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"slices"
+	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
@@ -45,6 +46,13 @@ type JsonHandler struct {
 	Entries                 []JsonEntry
 	MolangLocations         []shared.JsonPath
 	MolangSemanticLocations []shared.JsonPath
+	CommandEntry            JsonCommandEntry
+}
+
+type JsonCommandEntry struct {
+	Path         []shared.JsonPath
+	RequireSlash bool
+	Handler      *CommandHandler
 }
 
 func (j *JsonHandler) GetPattern() shared.Pattern {
@@ -59,7 +67,32 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 	if err != nil {
 		return err
 	}
+	return j.ParseDocument(document)
+}
+
+func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 	root, _ := jsonc.ParseTree(document.GetText(), nil)
+
+	for _, entry := range j.CommandEntry.Path {
+		for _, node := range entry.GetNodes(root) {
+			nodeValue, ok := node.Value.(string)
+			if !ok {
+				continue
+			}
+			if j.CommandEntry.RequireSlash {
+				if len(nodeValue) == 0 || nodeValue[0] != '/' {
+					continue
+				}
+			}
+			r := protocol.Range{
+				Start: document.PositionAt(node.Offset + 1),
+				End:   document.PositionAt(node.Offset + node.Length - 1),
+			}
+			virtualDocument := document.CreateVirtualDocument(r)
+			j.CommandEntry.Handler.ParseDocument(virtualDocument)
+		}
+	}
+
 	for _, entry := range j.Entries {
 		if entry.Store == nil {
 			continue
@@ -71,7 +104,7 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 					continue
 				}
 				ctx := JsonContext{
-					URI:       uri,
+					URI:       document.URI,
 					NodeValue: nodeValue,
 					GetPath: func() jsonc.Path {
 						return jsonc.GetNodePath(node)
@@ -96,7 +129,7 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 				}
 				entry.Store.Insert(scope, core.Symbol{
 					Value: nodeValue,
-					URI:   uri,
+					URI:   document.URI,
 					Range: &protocol.Range{
 						Start: document.PositionAt(node.Offset + 1),
 						End:   document.PositionAt(node.Offset + node.Length - 1),
@@ -109,6 +142,9 @@ func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
 }
 
 func (j *JsonHandler) Delete(uri protocol.DocumentURI) {
+	if j.CommandEntry.Handler != nil {
+		j.CommandEntry.Handler.Delete(uri)
+	}
 	for _, entry := range j.Entries {
 		if entry.Store != nil {
 			entry.Store.Delete(uri)
@@ -153,6 +189,15 @@ func (j *JsonHandler) isMolangLocation(location *jsonc.Location) bool {
 	if location.IsAtPropertyKey || location.PreviousNode == nil {
 		return false
 	}
+	nodeValue, ok := location.PreviousNode.Value.(string)
+	if !ok {
+		return false
+	}
+	if len(nodeValue) > 0 {
+		if nodeValue[0] == '@' || nodeValue[0] == '/' {
+			return false
+		}
+	}
 	if j.MolangLocations != nil {
 		for _, jsonPath := range j.MolangLocations {
 			if location.Path.Matches(jsonPath.Path) {
@@ -177,12 +222,41 @@ func (j *JsonHandler) isMolangSemanticLocation(location *jsonc.Location) bool {
 	return j.isMolangLocation(location)
 }
 
+func (j *JsonHandler) commandEntry(location *jsonc.Location) *JsonCommandEntry {
+	if location.IsAtPropertyKey || location.PreviousNode == nil {
+		return nil
+	}
+	nodeValue, ok := location.PreviousNode.Value.(string)
+	if !ok {
+		return nil
+	}
+	for _, jsonPath := range j.CommandEntry.Path {
+		if location.Path.Matches(jsonPath.Path) {
+			slashOk := !j.CommandEntry.RequireSlash || strings.HasPrefix(nodeValue, "/")
+			quickEventOk := j.CommandEntry.Handler.Parser.QuickEvent() && strings.HasPrefix(nodeValue, "@")
+			if !slashOk && !quickEventOk {
+				return nil
+			}
+			return &j.CommandEntry
+		}
+	}
+	return nil
+}
+
 func (j *JsonHandler) Completions(document *textdocument.TextDocument, position protocol.Position) []protocol.CompletionItem {
 	offset := document.OffsetAt(position)
 	location := jsonc.GetLocation(document.GetText(), offset)
 	node := location.PreviousNode
 
 	res := []protocol.CompletionItem{}
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		return entry.Handler.Completions(doc, position)
+	}
 	if j.isMolangLocation(location) {
 		docRange := protocol.Range{
 			Start: document.PositionAt(node.Offset + 1),
@@ -244,12 +318,20 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 	}
 
 	res := []protocol.LocationLink{}
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		res = entry.Handler.Definitions(doc, position)
+	}
 	if j.isMolangLocation(location) {
 		doc := document.CreateVirtualDocument(protocol.Range{
 			Start: document.PositionAt(node.Offset + 1),
 			End:   document.PositionAt(node.Offset + node.Length - 1),
 		})
-		res = Molang.Definitions(doc, position)
+		res = slices.Concat(res, Molang.Definitions(doc, position))
 	}
 	entry, ctx := j.prepareContext(document, location)
 	if entry == nil || entry.Source == nil || entry.References == nil {
@@ -291,6 +373,16 @@ func (j *JsonHandler) PrepareRename(document *textdocument.TextDocument, positio
 	if node == nil {
 		return nil
 	}
+
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		return entry.Handler.PrepareRename(doc, position)
+	}
+
 	entry, _ := j.prepareContext(document, location)
 	if entry == nil || entry.Source == nil || entry.References == nil || entry.DisableRename {
 		return nil
@@ -318,6 +410,16 @@ func (j *JsonHandler) Rename(document *textdocument.TextDocument, position proto
 	if node == nil {
 		return nil
 	}
+
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		return entry.Handler.Rename(doc, position, newName)
+	}
+
 	entry, ctx := j.prepareContext(document, location)
 	if entry == nil || entry.Source == nil || entry.References == nil || entry.DisableRename {
 		return nil
@@ -341,6 +443,14 @@ func (j *JsonHandler) Hover(document *textdocument.TextDocument, position protoc
 	offset := document.OffsetAt(position)
 	location := jsonc.GetLocation(document.GetText(), offset)
 	node := location.PreviousNode
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		return entry.Handler.Hover(doc, position)
+	}
 	if j.isMolangLocation(location) {
 		docRange := protocol.Range{
 			Start: document.PositionAt(node.Offset + 1),
@@ -356,6 +466,14 @@ func (j *JsonHandler) SignatureHelp(document *textdocument.TextDocument, positio
 	offset := document.OffsetAt(position)
 	location := jsonc.GetLocation(document.GetText(), offset)
 	node := location.PreviousNode
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		return entry.Handler.SignatureHelp(doc, position)
+	}
 	if j.isMolangLocation(location) {
 		docRange := protocol.Range{
 			Start: document.PositionAt(node.Offset + 1),
@@ -374,7 +492,7 @@ func (j *JsonHandler) SemanticTokens(document *textdocument.TextDocument) *proto
 	jsonc.Visit(document.GetText(), &jsonc.Visitor{
 		OnLiteralValue: func(value any, offset, length, startLine, startCharacter uint32, pathSupplier func() jsonc.Path) {
 			text, ok := value.(string)
-			if !ok || text == "" || text[0] == '@' || text[0] == '/' {
+			if !ok || len(text) == 0 {
 				return
 			}
 			location := jsonc.Location{
@@ -385,6 +503,17 @@ func (j *JsonHandler) SemanticTokens(document *textdocument.TextDocument) *proto
 					Offset: offset,
 					Length: length,
 				},
+			}
+			if entry := j.commandEntry(&location); entry != nil {
+				startOffset := offset + 1
+				endOffset := offset + length - 1
+				r := protocol.Range{
+					Start: document.PositionAt(startOffset),
+					End:   document.PositionAt(endOffset),
+				}
+				virtualDocument := document.CreateVirtualDocument(r)
+				tokens = append(tokens, entry.Handler.ComputeSemanticTokens(virtualDocument)...)
+				return
 			}
 			if j.isMolangSemanticLocation(&location) {
 				molangRanges = append(molangRanges, protocol.Range{
