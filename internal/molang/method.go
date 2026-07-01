@@ -381,6 +381,11 @@ var molangQueries = []Method{
 		Description: "Returns the ratio (from 0 to 1) of how much between AI ticks this frame is being rendered.",
 	},
 	{
+		Name:        "fuse_time",
+		Signature:   ": number",
+		Description: "Returns the remaining fuse time of the entity. Returns -1 if the entity doesn't have a \"minecraft:explode\" component.",
+	},
+	{
 		Name:        "get_actor_info_id",
 		Signature:   ": string",
 		Description: "Returns the integer id of an actor by its string name.",
@@ -400,6 +405,11 @@ var molangQueries = []Method{
 		Signature:   ": string",
 		Description: "DEPRECATED (Use query.is_item_name_any instead if possible so names can be changed later without breaking content.) Takes one optional hand slot as a parameter (0 or 'main_hand' for main hand, 1 or 'off_hand' for off hand), and a second parameter (0=default) if you would like the equipped item or any non-zero number for the currently rendered item, and returns the name of the item in the requested slot (defaulting to the main hand if no parameter is supplied) if there is one, otherwise returns ''.",
 		Deprecated:  true,
+	},
+	{
+		Name:        "get_level_seed_based_fraction",
+		Signature:   ": number",
+		Description: "Returns a value in range [0.0, 1.0] based on the level seed.",
 	},
 	{
 		Name:        "get_locator_offset",
@@ -1643,6 +1653,11 @@ var molangMath = []Method{
 		Description: "Clamp value to between min and max inclusive",
 	},
 	{
+		Name:        "copy_sign",
+		Signature:   "(A: number, B: number): number",
+		Description: "Returns A with the sign of B",
+	},
+	{
 		Name:        "cos",
 		Signature:   "(value: number): number",
 		Description: "Cosine (in degrees) of value",
@@ -1886,6 +1901,11 @@ var molangMath = []Method{
 		Name:        "round",
 		Signature:   "(value: number): number",
 		Description: "Round value to nearest integral number",
+	},
+	{
+		Name:        "sign",
+		Signature:   "(value: number): number",
+		Description: "Returns 1 if value is positive, -1 otherwise",
 	},
 	{
 		Name:        "sin",
