@@ -62,7 +62,7 @@ var AnimationController = &JsonHandler{
 				if !ok {
 					return nil
 				}
-				res := []core.Symbol{}
+				res := stores.Animate.References.Get(id)
 				set := mapset.NewThreadUnsafeSet[protocol.DocumentURI]()
 				for _, symbol := range stores.Animation.References.Get(id) {
 					if !set.ContainsOne(symbol.URI) {

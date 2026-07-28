@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
@@ -25,7 +26,15 @@ var ClientEntity = &JsonHandler{
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/animations/*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.References.GetFrom(ctx.URI)
+				res := stores.ClientAnimate.References.GetFrom(ctx.URI)
+				set := mapset.NewThreadUnsafeSet[string]()
+				for _, symbol := range stores.ClientAnimation.References.GetFrom(ctx.URI) {
+					if !set.ContainsOne(symbol.Value) {
+						set.Add(symbol.Value)
+						res = append(res, stores.ClientAnimate.References.Get(symbol.Value)...)
+					}
+				}
+				return res
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
 				return stores.ClientAnimate.Source.GetFrom(ctx.URI)
@@ -41,7 +50,15 @@ var ClientEntity = &JsonHandler{
 				return stores.ClientAnimate.Source.GetFrom(ctx.URI)
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.References.GetFrom(ctx.URI)
+				res := stores.ClientAnimate.References.GetFrom(ctx.URI)
+				set := mapset.NewThreadUnsafeSet[string]()
+				for _, symbol := range stores.ClientAnimation.References.GetFrom(ctx.URI) {
+					if !set.ContainsOne(symbol.Value) {
+						set.Add(symbol.Value)
+						res = append(res, stores.ClientAnimate.References.Get(symbol.Value)...)
+					}
+				}
+				return res
 			},
 		},
 		{
