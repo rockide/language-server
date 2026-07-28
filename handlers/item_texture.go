@@ -10,14 +10,14 @@ var ItemTexture = &JsonHandler{
 	Pattern: shared.ItemTextureGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.ItemTexture.Source,
+			Store:      stores.ItemTextureId.Source,
 			Path:       []shared.JsonPath{shared.JsonKey("texture_data/*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTexture.References.Get()
+				return stores.ItemTextureId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTexture.Source.Get()
+				return stores.ItemTextureId.Source.Get()
 			},
 		},
 		{

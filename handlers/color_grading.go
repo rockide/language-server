@@ -10,14 +10,14 @@ var ColorGrading = &JsonHandler{
 	Pattern: shared.ColorGradingGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.ColorGrading.Source,
+			Store:      stores.ColorGradingId.Source,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:color_grading_settings/description/identifier")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ColorGrading.References.Get()
+				return stores.ColorGradingId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ColorGrading.Source.Get()
+				return stores.ColorGradingId.Source.Get()
 			},
 		},
 	},

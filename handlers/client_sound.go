@@ -10,7 +10,7 @@ var ClientSound = &JsonHandler{
 	Pattern: shared.ClientSoundGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.SoundDefinition.References,
+			Store: stores.SoundDefinitionId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("block_sounds/*/events/*"),
 				shared.JsonValue("block_sounds/*/events/*/sound"),
@@ -26,10 +26,10 @@ var ClientSound = &JsonHandler{
 				shared.JsonValue("interactive_sounds/*/*/events/*/sound"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.Source.Get()
+				return stores.SoundDefinitionId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.References.Get()
+				return stores.SoundDefinitionId.References.Get()
 			},
 		},
 		{

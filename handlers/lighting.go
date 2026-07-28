@@ -10,14 +10,14 @@ var Lighting = &JsonHandler{
 	Pattern: shared.LightingGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.Lighting.Source,
+			Store:      stores.LightingId.Source,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:lighting_settings/description/identifier")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lighting.References.Get()
+				return stores.LightingId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lighting.Source.Get()
+				return stores.LightingId.Source.Get()
 			},
 		},
 	},

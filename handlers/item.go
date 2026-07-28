@@ -26,17 +26,17 @@ var Item = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.ItemTexture.References,
+			Store: stores.ItemTextureId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:item/components/minecraft:icon"),
 				shared.JsonValue("minecraft:item/components/minecraft:icon/texture"),
 				shared.JsonValue("minecraft:item/components/minecraft:icon/textures/*"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTexture.Source.Get()
+				return stores.ItemTextureId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTexture.References.Get()
+				return stores.ItemTextureId.References.Get()
 			},
 		},
 		{

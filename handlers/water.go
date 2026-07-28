@@ -10,14 +10,14 @@ var Water = &JsonHandler{
 	Pattern: shared.WaterGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.Water.Source,
+			Store:      stores.WaterId.Source,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:water_settings/description/identifier")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Water.References.Get()
+				return stores.WaterId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Water.Source.Get()
+				return stores.WaterId.Source.Get()
 			},
 		},
 	},

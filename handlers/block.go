@@ -60,7 +60,7 @@ var Block = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.Geometry.References,
+			Store: stores.GeometryId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:block/components/minecraft:geometry"),
 				shared.JsonValue("minecraft:block/components/minecraft:geometry/identifier"),
@@ -72,14 +72,14 @@ var Block = &JsonHandler{
 				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:item_visual/geometry/identifier"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.Source.Get()
+				return stores.GeometryId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.References.Get()
+				return stores.GeometryId.References.Get()
 			},
 		},
 		{
-			Store: stores.TerrainTexture.References,
+			Store: stores.TerrainTextureId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:block/components/minecraft:material_instances/*/texture"),
 				shared.JsonValue("minecraft:block/components/minecraft:item_visual/material_instances/*/texture"),
@@ -89,10 +89,10 @@ var Block = &JsonHandler{
 				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:destruction_particles/texture"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.Source.Get()
+				return stores.TerrainTextureId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.References.Get()
+				return stores.TerrainTextureId.References.Get()
 			},
 		},
 		{
@@ -109,16 +109,16 @@ var Block = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.BlockCulling.References,
+			Store: stores.BlockCullingId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:block/components/minecraft:geometry/culling"),
 				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:geometry/culling"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockCulling.Source.Get()
+				return stores.BlockCullingId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockCulling.References.Get()
+				return stores.BlockCullingId.References.Get()
 			},
 		},
 		{

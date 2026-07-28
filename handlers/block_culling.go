@@ -14,14 +14,14 @@ var BlockCulling = &JsonHandler{
 	Pattern: shared.BlockCullingGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.BlockCulling.Source,
+			Store:      stores.BlockCullingId.Source,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:block_culling_rules/description/identifier")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockCulling.References.Get()
+				return stores.BlockCullingId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockCulling.Source.Get()
+				return stores.BlockCullingId.Source.Get()
 			},
 		},
 		{
@@ -60,7 +60,7 @@ func _bcGeoIdentifiers(ctx *JsonContext) []string {
 	// Find geometries using the culling rules
 	var identifiers []string
 	set := mapset.NewThreadUnsafeSet[string]()
-	for _, ref := range stores.BlockCulling.References.Get() {
+	for _, ref := range stores.BlockCullingId.References.Get() {
 		document, err := textdocument.GetOrReadFile(ref.URI)
 		if err != nil {
 			continue

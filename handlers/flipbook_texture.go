@@ -10,13 +10,13 @@ var FlipbookTexture = &JsonHandler{
 	Pattern: shared.FlipbookTextureGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.TerrainTexture.References,
+			Store: stores.TerrainTextureId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("*/atlas_tile")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.Source.Get()
+				return stores.TerrainTextureId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.References.Get()
+				return stores.TerrainTextureId.References.Get()
 			},
 		},
 		{

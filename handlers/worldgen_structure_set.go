@@ -10,13 +10,13 @@ var WorldgenStructureSet = &JsonHandler{
 	Pattern: shared.WorldgenStructureSetGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.WorldgenJigsaw.References,
+			Store: stores.WorldgenJigsawId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:structure_set/structures/*/structure")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenJigsaw.Source.Get()
+				return stores.WorldgenJigsawId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenJigsaw.References.Get()
+				return stores.WorldgenJigsawId.References.Get()
 			},
 		},
 	},

@@ -10,14 +10,14 @@ var TerrainTexture = &JsonHandler{
 	Pattern: shared.TerrainTextureGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.TerrainTexture.Source,
+			Store:      stores.TerrainTextureId.Source,
 			Path:       []shared.JsonPath{shared.JsonKey("texture_data/*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.References.Get()
+				return stores.TerrainTextureId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.Source.Get()
+				return stores.TerrainTextureId.Source.Get()
 			},
 		},
 		{

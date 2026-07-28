@@ -21,40 +21,40 @@ var Attachable = &JsonHandler{
 			},
 		},
 		{
-			Store:      stores.ClientAnimate.Source,
+			Store:      stores.ClientAnimationAlias.Source,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:attachable/description/animations/*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.References.GetFrom(ctx.URI)
+				return stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.Source.GetFrom(ctx.URI)
+				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Store: stores.ClientAnimate.References,
+			Store: stores.ClientAnimationAlias.References,
 			Path: []shared.JsonPath{
 				shared.JsonKey("minecraft:attachable/description/scripts/animate/*/*"),
 				shared.JsonValue("minecraft:attachable/description/scripts/animate/*"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.Source.GetFrom(ctx.URI)
+				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.References.GetFrom(ctx.URI)
+				return stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Store: stores.ClientAnimation.References,
+			Store: stores.ClientAnimationId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/animations/*")},
 			ScopeKey: func(ctx *JsonContext) string {
 				return ctx.NodeValue
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimation.Source.Get()
+				return stores.ClientAnimationId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimation.References.Get()
+				return stores.ClientAnimationId.References.Get()
 			},
 		},
 		{
@@ -90,13 +90,13 @@ var Attachable = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.Geometry.References,
+			Store: stores.GeometryId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/geometry/*")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.Source.Get()
+				return stores.GeometryId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.References.Get()
+				return stores.GeometryId.References.Get()
 			},
 		},
 		{
@@ -137,13 +137,13 @@ var Attachable = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.SoundDefinition.References,
+			Store: stores.SoundDefinitionId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/sound_effects/*")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.Source.Get()
+				return stores.SoundDefinitionId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.References.Get()
+				return stores.SoundDefinitionId.References.Get()
 			},
 		},
 	},

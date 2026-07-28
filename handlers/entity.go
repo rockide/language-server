@@ -52,56 +52,56 @@ var Entity = &JsonHandler{
 			},
 		},
 		{
-			Store:      stores.Animate.Source,
+			Store:      stores.AnimationAlias.Source,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:entity/description/animations/*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				res := stores.Animate.References.GetFrom(ctx.URI)
+				res := stores.AnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
-				for _, symbol := range stores.Animation.References.GetFrom(ctx.URI) {
+				for _, symbol := range stores.AnimationId.References.GetFrom(ctx.URI) {
 					if !set.ContainsOne(symbol.Value) {
 						set.Add(symbol.Value)
-						res = append(res, stores.Animate.References.Get(symbol.Value)...)
+						res = append(res, stores.AnimationAlias.References.Get(symbol.Value)...)
 					}
 				}
 				return res
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Animate.Source.GetFrom(ctx.URI)
+				return stores.AnimationAlias.Source.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Store: stores.Animate.References,
+			Store: stores.AnimationAlias.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:entity/description/scripts/animate/*"),
 				shared.JsonKey("minecraft:entity/description/scripts/animate/*/*"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Animate.Source.GetFrom(ctx.URI)
+				return stores.AnimationAlias.Source.GetFrom(ctx.URI)
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				res := stores.Animate.References.GetFrom(ctx.URI)
+				res := stores.AnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
-				for _, symbol := range stores.Animation.References.GetFrom(ctx.URI) {
+				for _, symbol := range stores.AnimationId.References.GetFrom(ctx.URI) {
 					if !set.ContainsOne(symbol.Value) {
 						set.Add(symbol.Value)
-						res = append(res, stores.Animate.References.Get(symbol.Value)...)
+						res = append(res, stores.AnimationAlias.References.Get(symbol.Value)...)
 					}
 				}
 				return res
 			},
 		},
 		{
-			Store: stores.Animation.References,
+			Store: stores.AnimationId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:entity/description/animations/*")},
 			ScopeKey: func(ctx *JsonContext) string {
 				return ctx.NodeValue
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Animation.Source.Get()
+				return stores.AnimationId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Animation.References.Get()
+				return stores.AnimationId.References.Get()
 			},
 		},
 		{

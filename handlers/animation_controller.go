@@ -14,12 +14,12 @@ var AnimationController = &JsonHandler{
 	Pattern: shared.AnimationControllerGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.Animation.Source,
+			Store:      stores.AnimationId.Source,
 			Path:       []shared.JsonPath{shared.JsonKey("animation_controllers/*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
 				filtered := []core.Symbol{}
-				for _, ref := range stores.Animation.References.Get() {
+				for _, ref := range stores.AnimationId.References.Get() {
 					if strings.HasPrefix(ref.Value, "controller.") {
 						filtered = append(filtered, ref)
 					}
@@ -27,11 +27,11 @@ var AnimationController = &JsonHandler{
 				return filtered
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Animation.Source.Get()
+				return stores.AnimationId.Source.Get()
 			},
 		},
 		{
-			Store: stores.Animate.References,
+			Store: stores.AnimationAlias.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("animation_controllers/*/states/*/animations/*"),
 				shared.JsonKey("animation_controllers/*/states/*/animations/*/*"),
@@ -49,10 +49,10 @@ var AnimationController = &JsonHandler{
 				}
 				res := []core.Symbol{}
 				set := mapset.NewThreadUnsafeSet[protocol.DocumentURI]()
-				for _, symbol := range stores.Animation.References.Get(id) {
+				for _, symbol := range stores.AnimationId.References.Get(id) {
 					if !set.ContainsOne(symbol.URI) {
 						set.Add(symbol.URI)
-						res = append(res, stores.Animate.Source.GetFrom(symbol.URI)...)
+						res = append(res, stores.AnimationAlias.Source.GetFrom(symbol.URI)...)
 					}
 				}
 				return res
@@ -62,12 +62,12 @@ var AnimationController = &JsonHandler{
 				if !ok {
 					return nil
 				}
-				res := stores.Animate.References.Get(id)
+				res := stores.AnimationAlias.References.Get(id)
 				set := mapset.NewThreadUnsafeSet[protocol.DocumentURI]()
-				for _, symbol := range stores.Animation.References.Get(id) {
+				for _, symbol := range stores.AnimationId.References.Get(id) {
 					if !set.ContainsOne(symbol.URI) {
 						set.Add(symbol.URI)
-						res = append(res, stores.Animate.References.GetFrom(symbol.URI)...)
+						res = append(res, stores.AnimationAlias.References.GetFrom(symbol.URI)...)
 					}
 				}
 				return res

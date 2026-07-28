@@ -10,13 +10,13 @@ var WorldgenProcessor = &JsonHandler{
 	Pattern: shared.WorldgenProcessorGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.WorldgenProcessor.Source,
+			Store: stores.WorldgenProcessorId.Source,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:processor_list/description/identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessor.References.Get()
+				return stores.WorldgenProcessorId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessor.Source.Get()
+				return stores.WorldgenProcessorId.Source.Get()
 			},
 		},
 		{

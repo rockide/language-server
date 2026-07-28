@@ -14,7 +14,7 @@ var Geometry = &JsonHandler{
 	Pattern: shared.GeometryGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.Geometry.Source,
+			Store: stores.GeometryId.Source,
 			Path: []shared.JsonPath{
 				shared.JsonKey("*"),
 				shared.JsonValue("minecraft:geometry/*/description/identifier"),
@@ -28,10 +28,10 @@ var Geometry = &JsonHandler{
 			},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.References.Get()
+				return stores.GeometryId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.Source.Get()
+				return stores.GeometryId.Source.Get()
 			},
 		},
 		{

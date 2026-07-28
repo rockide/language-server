@@ -22,56 +22,56 @@ var ClientEntity = &JsonHandler{
 			},
 		},
 		{
-			Store:      stores.ClientAnimate.Source,
+			Store:      stores.ClientAnimationAlias.Source,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/animations/*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				res := stores.ClientAnimate.References.GetFrom(ctx.URI)
+				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
-				for _, symbol := range stores.ClientAnimation.References.GetFrom(ctx.URI) {
+				for _, symbol := range stores.ClientAnimationId.References.GetFrom(ctx.URI) {
 					if !set.ContainsOne(symbol.Value) {
 						set.Add(symbol.Value)
-						res = append(res, stores.ClientAnimate.References.Get(symbol.Value)...)
+						res = append(res, stores.ClientAnimationAlias.References.Get(symbol.Value)...)
 					}
 				}
 				return res
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.Source.GetFrom(ctx.URI)
+				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Store: stores.ClientAnimate.References,
+			Store: stores.ClientAnimationAlias.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:client_entity/description/scripts/animate/*"),
 				shared.JsonKey("minecraft:client_entity/description/scripts/animate/*/*"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimate.Source.GetFrom(ctx.URI)
+				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				res := stores.ClientAnimate.References.GetFrom(ctx.URI)
+				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
-				for _, symbol := range stores.ClientAnimation.References.GetFrom(ctx.URI) {
+				for _, symbol := range stores.ClientAnimationId.References.GetFrom(ctx.URI) {
 					if !set.ContainsOne(symbol.Value) {
 						set.Add(symbol.Value)
-						res = append(res, stores.ClientAnimate.References.Get(symbol.Value)...)
+						res = append(res, stores.ClientAnimationAlias.References.Get(symbol.Value)...)
 					}
 				}
 				return res
 			},
 		},
 		{
-			Store: stores.ClientAnimation.References,
+			Store: stores.ClientAnimationId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/animations/*")},
 			ScopeKey: func(ctx *JsonContext) string {
 				return ctx.NodeValue
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimation.Source.Get()
+				return stores.ClientAnimationId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimation.References.Get()
+				return stores.ClientAnimationId.References.Get()
 			},
 		},
 		{
@@ -106,13 +106,13 @@ var ClientEntity = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.Geometry.References,
+			Store: stores.GeometryId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/geometry/*")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.Source.Get()
+				return stores.GeometryId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Geometry.References.Get()
+				return stores.GeometryId.References.Get()
 			},
 		},
 		{
@@ -129,13 +129,13 @@ var ClientEntity = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.ItemTexture.References,
+			Store: stores.ItemTextureId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/spawn_egg/texture")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTexture.Source.Get()
+				return stores.ItemTextureId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTexture.References.Get()
+				return stores.ItemTextureId.References.Get()
 			},
 		},
 		{
@@ -163,13 +163,13 @@ var ClientEntity = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.SoundDefinition.References,
+			Store: stores.SoundDefinitionId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/sound_effects/*")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.Source.Get()
+				return stores.SoundDefinitionId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.References.Get()
+				return stores.SoundDefinitionId.References.Get()
 			},
 		},
 	},

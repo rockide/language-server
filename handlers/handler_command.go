@@ -827,12 +827,12 @@ var commandEntries = map[string]commandEntry{
 		},
 	},
 	mcfunction.TagClientAnimationId: {
-		Store: stores.ClientAnimation.References,
+		Store: stores.ClientAnimationId.References,
 		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ClientAnimation.Source.Get()
+			return stores.ClientAnimationId.Source.Get()
 		},
 		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.ClientAnimation.References.Get()
+			return stores.ClientAnimationId.References.Get()
 		},
 	},
 	mcfunction.TagDialogueId: {
@@ -880,12 +880,12 @@ var commandEntries = map[string]commandEntry{
 		},
 	},
 	mcfunction.TagFogId: {
-		Store: stores.Fog.References,
+		Store: stores.FogId.References,
 		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.Fog.Source.Get()
+			return stores.FogId.Source.Get()
 		},
 		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.Fog.References.Get()
+			return stores.FogId.References.Get()
 		},
 	},
 	mcfunction.TagFunctionFile: {
@@ -908,21 +908,21 @@ var commandEntries = map[string]commandEntry{
 		},
 	},
 	mcfunction.TagJigsawId: {
-		Store: stores.WorldgenJigsaw.References,
+		Store: stores.WorldgenJigsawId.References,
 		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenJigsaw.Source.Get()
+			return stores.WorldgenJigsawId.Source.Get()
 		},
 		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenJigsaw.References.Get()
+			return stores.WorldgenJigsawId.References.Get()
 		},
 	},
 	mcfunction.TagJigsawTemplatePoolId: {
-		Store: stores.WorldgenTemplatePool.References,
+		Store: stores.WorldgenTemplatePoolId.References,
 		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenTemplatePool.Source.Get()
+			return stores.WorldgenTemplatePoolId.Source.Get()
 		},
 		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenTemplatePool.References.Get()
+			return stores.WorldgenTemplatePoolId.References.Get()
 		},
 	},
 	mcfunction.TagLootTableFile: {
@@ -937,12 +937,12 @@ var commandEntries = map[string]commandEntry{
 		},
 	},
 	mcfunction.TagMusicId: {
-		Store: stores.MusicDefinition.References,
+		Store: stores.MusicDefinitionId.References,
 		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.MusicDefinition.Source.Get()
+			return stores.MusicDefinitionId.Source.Get()
 		},
 		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.MusicDefinition.References.Get()
+			return stores.MusicDefinitionId.References.Get()
 		},
 	},
 	mcfunction.TagProvidedFogId: {
@@ -961,12 +961,12 @@ var commandEntries = map[string]commandEntry{
 		},
 	},
 	mcfunction.TagSoundId: {
-		Store: stores.SoundDefinition.References,
+		Store: stores.SoundDefinitionId.References,
 		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.SoundDefinition.Source.Get()
+			return stores.SoundDefinitionId.Source.Get()
 		},
 		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.SoundDefinition.References.Get()
+			return stores.SoundDefinitionId.References.Get()
 		},
 	},
 	mcfunction.TagStructureFile: {

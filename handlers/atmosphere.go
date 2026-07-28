@@ -10,14 +10,14 @@ var Atmosphere = &JsonHandler{
 	Pattern: shared.AtmosphereGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.Atmosphere.Source,
+			Store:      stores.AtmosphereId.Source,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:atmosphere_settings/description/identifier")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Atmosphere.References.Get()
+				return stores.AtmosphereId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Atmosphere.Source.Get()
+				return stores.AtmosphereId.Source.Get()
 			},
 		},
 	},

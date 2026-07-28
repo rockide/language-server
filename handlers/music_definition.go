@@ -10,24 +10,24 @@ var MusicDefintion = &JsonHandler{
 	Pattern: shared.MusicDefinitionGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.MusicDefinition.Source,
+			Store:      stores.MusicDefinitionId.Source,
 			Path:       []shared.JsonPath{shared.JsonKey("*")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.MusicDefinition.References.Get()
+				return stores.MusicDefinitionId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.MusicDefinition.Source.Get()
+				return stores.MusicDefinitionId.Source.Get()
 			},
 		},
 		{
-			Store: stores.SoundDefinition.References,
+			Store: stores.SoundDefinitionId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("*/event_name")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.Source.Get()
+				return stores.SoundDefinitionId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.References.Get()
+				return stores.SoundDefinitionId.References.Get()
 			},
 		},
 	},

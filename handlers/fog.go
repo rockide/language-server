@@ -10,14 +10,14 @@ var Fog = &JsonHandler{
 	Pattern: shared.FogGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.Fog.Source,
+			Store:      stores.FogId.Source,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:fog_settings/description/identifier")},
 			FilterDiff: true,
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Fog.References.Get()
+				return stores.FogId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Fog.Source.Get()
+				return stores.FogId.Source.Get()
 			},
 		},
 	},

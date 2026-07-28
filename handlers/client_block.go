@@ -27,16 +27,16 @@ var ClientBlock = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.TerrainTexture.References,
+			Store: stores.TerrainTextureId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("*/textures"),
 				shared.JsonValue("*/textures/*"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.Source.Get()
+				return stores.TerrainTextureId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTexture.References.Get()
+				return stores.TerrainTextureId.References.Get()
 			},
 		},
 	},

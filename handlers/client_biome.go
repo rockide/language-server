@@ -22,7 +22,7 @@ var ClientBiome = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.SoundDefinition.References,
+			Store: stores.SoundDefinitionId.References,
 			Path: sliceutil.Map([]string{
 				"minecraft:ambient_sounds/addition",
 				"minecraft:ambient_sounds/loop",
@@ -31,70 +31,70 @@ var ClientBiome = &JsonHandler{
 				return shared.JsonValue("minecraft:client_biome/components/" + value)
 			}),
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.Source.Get()
+				return stores.SoundDefinitionId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinition.References.Get()
+				return stores.SoundDefinitionId.References.Get()
 			},
 		},
 		{
-			Store: stores.Atmosphere.References,
+			Store: stores.AtmosphereId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_biome/components/minecraft:atmosphere_identifier/atmosphere_identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Atmosphere.Source.Get()
+				return stores.AtmosphereId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Atmosphere.References.Get()
+				return stores.AtmosphereId.References.Get()
 			},
 		},
 		{
-			Store: stores.MusicDefinition.References,
+			Store: stores.MusicDefinitionId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_biome/components/minecraft:biome_music/music_definition")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.MusicDefinition.Source.Get()
+				return stores.MusicDefinitionId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.MusicDefinition.References.Get()
+				return stores.MusicDefinitionId.References.Get()
 			},
 		},
 		{
-			Store: stores.ColorGrading.References,
+			Store: stores.ColorGradingId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_biome/components/minecraft:color_grading_identifier/color_grading_identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ColorGrading.Source.Get()
+				return stores.ColorGradingId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ColorGrading.References.Get()
+				return stores.ColorGradingId.References.Get()
 			},
 		},
 		{
-			Store: stores.Fog.References,
+			Store: stores.FogId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_biome/components/minecraft:fog_appearance/fog_identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Fog.Source.Get()
+				return stores.FogId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Fog.References.Get()
+				return stores.FogId.References.Get()
 			},
 		},
 		{
-			Store: stores.Lighting.References,
+			Store: stores.LightingId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_biome/components/minecraft:lighting_identifier/lighting_identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lighting.Source.Get()
+				return stores.LightingId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lighting.References.Get()
+				return stores.LightingId.References.Get()
 			},
 		},
 		{
-			Store: stores.Water.References,
+			Store: stores.WaterId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_biome/components/minecraft:water_identifier/water_identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Water.Source.Get()
+				return stores.WaterId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Water.References.Get()
+				return stores.WaterId.References.Get()
 			},
 		},
 	},

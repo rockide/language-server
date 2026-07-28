@@ -10,13 +10,13 @@ var WorldgenJigsaw = &JsonHandler{
 	Pattern: shared.WorldgenJigsawGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.WorldgenJigsaw.Source,
+			Store: stores.WorldgenJigsawId.Source,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:jigsaw/description/identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenJigsaw.References.Get()
+				return stores.WorldgenJigsawId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenJigsaw.Source.Get()
+				return stores.WorldgenJigsawId.Source.Get()
 			},
 		},
 		{
@@ -30,7 +30,7 @@ var WorldgenJigsaw = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.WorldgenTemplatePool.References,
+			Store: stores.WorldgenTemplatePoolId.References,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:jigsaw/start_pool"),
 				shared.JsonValue("minecraft:jigsaw/pool_aliases/*/alias"),
@@ -40,10 +40,10 @@ var WorldgenJigsaw = &JsonHandler{
 				shared.JsonValue("minecraft:jigsaw/pool_aliases/*/groups/*/data/*/target"),
 			},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePool.Source.Get()
+				return stores.WorldgenTemplatePoolId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePool.References.Get()
+				return stores.WorldgenTemplatePoolId.References.Get()
 			},
 		},
 	},

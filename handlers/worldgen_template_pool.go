@@ -11,33 +11,33 @@ var WorldgenTemplatePool = &JsonHandler{
 	Pattern: shared.WorldgenTemplatePoolGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.WorldgenTemplatePool.Source,
+			Store: stores.WorldgenTemplatePoolId.Source,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:template_pool/description/identifier")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePool.References.Get()
+				return stores.WorldgenTemplatePoolId.References.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePool.Source.Get()
+				return stores.WorldgenTemplatePoolId.Source.Get()
 			},
 		},
 		{
-			Store: stores.WorldgenProcessor.References,
+			Store: stores.WorldgenProcessorId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:template_pool/elements/*/element/processors")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessor.Source.Get()
+				return stores.WorldgenProcessorId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessor.References.Get()
+				return stores.WorldgenProcessorId.References.Get()
 			},
 		},
 		{
-			Store: stores.WorldgenTemplatePool.References,
+			Store: stores.WorldgenTemplatePoolId.References,
 			Path:  []shared.JsonPath{shared.JsonValue("minecraft:template_pool/fallback")},
 			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePool.Source.Get()
+				return stores.WorldgenTemplatePoolId.Source.Get()
 			},
 			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePool.References.Get()
+				return stores.WorldgenTemplatePoolId.References.Get()
 			},
 		},
 		{
