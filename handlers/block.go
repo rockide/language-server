@@ -42,6 +42,19 @@ var Block = &JsonHandler{
 		{
 			Store: stores.BlockTag.Source,
 			Path: []shared.JsonPath{
+				shared.JsonValue("minecraft:block/components/minecraft:tags/*"),
+				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:tags/*"),
+			},
+			Source: func(ctx *JsonContext) []core.Symbol {
+				return slices.Concat(stores.BlockTag.Source.Get(), stores.BlockTag.References.Get())
+			},
+			References: func(ctx *JsonContext) []core.Symbol {
+				return nil
+			},
+		},
+		{
+			Store: stores.BlockTag.Source,
+			Path: []shared.JsonPath{
 				shared.JsonKey("minecraft:block/components/*"),
 				shared.JsonKey("minecraft:block/permutations/*/components/*"),
 			},
