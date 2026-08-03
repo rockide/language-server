@@ -802,8 +802,8 @@ var Entity = &JsonHandler{
 		}),
 	),
 	CommandEntry: JsonCommandEntry{
-		Handler:      EmbedCommand,
-		RequireSlash: false,
+		Handler:   EmbedCommand,
+		SlashMode: SlashNever,
 		Path: []shared.JsonPath{
 			shared.JsonValue("minecraft:entity/events/**/queue_command/command"),
 			shared.JsonValue("minecraft:entity/events/**/queue_command/command/*"),

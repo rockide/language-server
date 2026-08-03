@@ -49,10 +49,32 @@ type JsonHandler struct {
 	CommandEntry            JsonCommandEntry
 }
 
+type SlashMode uint8
+
+const (
+	SlashAlways SlashMode = iota
+	SlashOptional
+	SlashNever
+)
+
+func (m SlashMode) matches(value string) bool {
+	hasSlash := strings.HasPrefix(value, "/")
+	switch m {
+	case SlashAlways:
+		return hasSlash
+	case SlashOptional:
+		return true
+	case SlashNever:
+		return !hasSlash
+	default:
+		return false
+	}
+}
+
 type JsonCommandEntry struct {
-	Path         []shared.JsonPath
-	RequireSlash bool
-	Handler      *CommandHandler
+	Path      []shared.JsonPath
+	SlashMode SlashMode
+	Handler   *CommandHandler
 }
 
 func (j *JsonHandler) GetPattern() shared.Pattern {
@@ -79,10 +101,8 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 			if !ok {
 				continue
 			}
-			if j.CommandEntry.RequireSlash {
-				if len(nodeValue) == 0 || nodeValue[0] != '/' {
-					continue
-				}
+			if !j.CommandEntry.SlashMode.matches(nodeValue) {
+				continue
 			}
 			r := protocol.Range{
 				Start: document.PositionAt(node.Offset + 1),
@@ -232,7 +252,7 @@ func (j *JsonHandler) commandEntry(location *jsonc.Location) *JsonCommandEntry {
 	}
 	for _, jsonPath := range j.CommandEntry.Path {
 		if location.Path.Matches(jsonPath.Path) {
-			slashOk := !j.CommandEntry.RequireSlash || strings.HasPrefix(nodeValue, "/")
+			slashOk := j.CommandEntry.SlashMode.matches(nodeValue)
 			quickEventOk := j.CommandEntry.Handler.Parser.QuickEvent() && strings.HasPrefix(nodeValue, "@")
 			if !slashOk && !quickEventOk {
 				return nil

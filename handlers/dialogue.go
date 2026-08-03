@@ -21,8 +21,8 @@ var Dialogue = &JsonHandler{
 		},
 	},
 	CommandEntry: JsonCommandEntry{
-		Handler:      EmbedDialogueCommand,
-		RequireSlash: true,
+		Handler:   EmbedDialogueCommand,
+		SlashMode: SlashAlways,
 		Path: []shared.JsonPath{
 			shared.JsonValue("minecraft:npc_dialogue/scenes/*/on_open_commands/*"),
 			shared.JsonValue("minecraft:npc_dialogue/scenes/*/on_close_commands/*"),
