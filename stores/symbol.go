@@ -128,7 +128,7 @@ var (
 	GeometryId            = NewSymbolBinding(vanilla.GeometryId)
 	GeometryBone          = NewSymbolBinding(nil)
 	ItemTextureId         = NewSymbolBinding(vanilla.ItemTextureId)
-	Lang                  = NewSymbolBinding(nil)
+	Lang                  = NewSymbolBinding(vanilla.LangKey)
 	LightingId            = NewSymbolBinding(vanilla.LightingId)
 	ParticleId            = NewSymbolBinding(vanilla.ParticleId)
 	ParticleEvent         = NewSymbolBinding(nil)
