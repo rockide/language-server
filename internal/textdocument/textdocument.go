@@ -156,6 +156,11 @@ func SyncIncremental(uri protocol.DocumentURI, contentChanges []protocol.TextDoc
 		return
 	}
 	for _, change := range contentChanges {
+		if change.Range == nil {
+			document.content = []rune(change.Text)
+			document.lineOffsets = nil
+			continue
+		}
 		startOffset := document.OffsetAt(change.Range.Start)
 		endOffset := document.OffsetAt(change.Range.End)
 		document.content = slices.Concat(document.content[:startOffset], []rune(change.Text), document.content[endOffset:])
