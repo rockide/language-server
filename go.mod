@@ -1,8 +1,6 @@
 module github.com/rockide/language-server
 
-go 1.24.0
-
-toolchain go1.24.2
+go 1.27.0
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.7.1
