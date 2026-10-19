@@ -29,7 +29,7 @@ var LootTable = &JsonHandler{
 				return entryType != nil && entryType.Value == "loot_table"
 			},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.LootTablePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

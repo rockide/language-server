@@ -15,7 +15,7 @@ var Entity = &JsonHandler{
 	Pattern: shared.EntityGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.EntityId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:entity/description/identifier")},
 			FilterDiff: true,
@@ -42,11 +42,14 @@ var Entity = &JsonHandler{
 			}),
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.AnimationAlias,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:entity/description/animations/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.AnimationAlias.Definition.GetFrom(ctx.URI)
+			},
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				res := stores.AnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
 				for _, symbol := range stores.AnimationId.References.GetFrom(ctx.URI) {
@@ -57,9 +60,6 @@ var Entity = &JsonHandler{
 				}
 				return res
 			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.AnimationAlias.Source.GetFrom(ctx.URI)
-			},
 		},
 		{
 			Kind:    References,
@@ -68,8 +68,8 @@ var Entity = &JsonHandler{
 				shared.JsonValue("minecraft:entity/description/scripts/animate/*"),
 				shared.JsonKey("minecraft:entity/description/scripts/animate/*/*"),
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.AnimationAlias.Source.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.AnimationAlias.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				res := stores.AnimationAlias.References.GetFrom(ctx.URI)
@@ -92,23 +92,23 @@ var Entity = &JsonHandler{
 			},
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.EntityProperty,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:entity/description/properties/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityProperty.References.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.EntityProperty.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityProperty.Source.GetFrom(ctx.URI)
+				return stores.EntityProperty.References.GetFrom(ctx.URI)
 			},
 		},
 		{
 			Kind:    References,
 			Binding: stores.EntityProperty,
 			Path:    []shared.JsonPath{shared.JsonKey("minecraft:entity/events/**/set_property/*")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityProperty.Source.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.EntityProperty.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.EntityProperty.References.GetFrom(ctx.URI)
@@ -131,20 +131,20 @@ var Entity = &JsonHandler{
 				}
 				return false
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
 				subject := jsonc.FindNodeAtLocation(parent, jsonc.Path{"subject"})
 				if subject == nil || subject.Value == "self" {
-					return stores.EntityProperty.Source.GetFrom(ctx.URI)
+					return stores.EntityProperty.Definition.GetFrom(ctx.URI)
 				}
-				return stores.EntityProperty.Source.Get()
+				return stores.EntityProperty.Definition.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.EntityProperty.References.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.EntityPropertyValue,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:entity/description/properties/*/values/*")},
 			FilterDiff: true,
@@ -154,15 +154,15 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				if id, ok := ctx.GetPath()[3].(string); ok {
-					return stores.EntityPropertyValue.References.GetFrom(ctx.URI, id)
+					return stores.EntityPropertyValue.Definition.GetFrom(ctx.URI, id)
 				}
 				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				if id, ok := ctx.GetPath()[3].(string); ok {
-					return stores.EntityPropertyValue.Source.GetFrom(ctx.URI, id)
+					return stores.EntityPropertyValue.References.GetFrom(ctx.URI, id)
 				}
 				return nil
 			},
@@ -182,9 +182,9 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				if id, ok := ctx.GetPath()[3].(string); ok {
-					return stores.EntityPropertyValue.Source.GetFrom(ctx.URI, id)
+					return stores.EntityPropertyValue.Definition.GetFrom(ctx.URI, id)
 				}
 				return nil
 			},
@@ -206,10 +206,10 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				path := ctx.GetPath()
 				if id, ok := path[len(path)-1].(string); ok {
-					return stores.EntityPropertyValue.Source.GetFrom(ctx.URI, id)
+					return stores.EntityPropertyValue.Definition.GetFrom(ctx.URI, id)
 				}
 				return nil
 			},
@@ -243,7 +243,7 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
 				domain := jsonc.FindNodeAtLocation(parent, jsonc.Path{"domain"})
 				if domain == nil {
@@ -255,9 +255,9 @@ var Entity = &JsonHandler{
 				}
 				subject := jsonc.FindNodeAtLocation(parent, jsonc.Path{"subject"})
 				if subject == nil || subject.Value == "self" {
-					return stores.EntityPropertyValue.Source.GetFrom(ctx.URI, id)
+					return stores.EntityPropertyValue.Definition.GetFrom(ctx.URI, id)
 				}
-				return stores.EntityPropertyValue.Source.Get(id)
+				return stores.EntityPropertyValue.Definition.Get(id)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
@@ -277,30 +277,30 @@ var Entity = &JsonHandler{
 			},
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.EntityComponentGroup,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:entity/component_groups/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityComponentGroup.References.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.EntityComponentGroup.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityComponentGroup.Source.GetFrom(ctx.URI)
+				return stores.EntityComponentGroup.References.GetFrom(ctx.URI)
 			},
 		},
 		{
 			Kind:    References,
 			Binding: stores.EntityComponentGroup,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:entity/events/**/component_groups/*")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityComponentGroup.Source.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.EntityComponentGroup.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.EntityComponentGroup.References.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.EntityEvent,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:entity/events/*")},
 			FilterDiff: true,
@@ -314,7 +314,17 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				root := ctx.GetRootNode()
+				node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:entity", "description", "identifier"})
+				if node != nil {
+					if identifier, ok := node.Value.(string); ok {
+						return stores.EntityEvent.Definition.Get(identifier)
+					}
+				}
+				return stores.EntityEvent.Definition.GetFrom(ctx.URI)
+			},
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				root := ctx.GetRootNode()
 				node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:entity", "description", "identifier"})
 				if node != nil {
@@ -323,16 +333,6 @@ var Entity = &JsonHandler{
 					}
 				}
 				return stores.EntityEvent.References.GetFrom(ctx.URI)
-			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				root := ctx.GetRootNode()
-				node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:entity", "description", "identifier"})
-				if node != nil {
-					if identifier, ok := node.Value.(string); ok {
-						return stores.EntityEvent.Source.Get(identifier)
-					}
-				}
-				return stores.EntityEvent.Source.GetFrom(ctx.URI)
 			},
 		},
 		{
@@ -358,7 +358,7 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
 				target := jsonc.FindNodeAtLocation(parent, jsonc.Path{"target"})
 				if target == nil || target.Value == "self" {
@@ -366,11 +366,11 @@ var Entity = &JsonHandler{
 					node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:entity", "description", "identifier"})
 					if node != nil {
 						if identifier, ok := node.Value.(string); ok {
-							return stores.EntityEvent.Source.Get(identifier)
+							return stores.EntityEvent.Definition.Get(identifier)
 						}
 					}
 				}
-				return stores.EntityEvent.Source.Get()
+				return stores.EntityEvent.Definition.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
@@ -410,15 +410,15 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				root := ctx.GetRootNode()
 				node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:entity", "description", "identifier"})
 				if node != nil {
 					if identifier, ok := node.Value.(string); ok {
-						return stores.EntityEvent.Source.Get(identifier)
+						return stores.EntityEvent.Definition.Get(identifier)
 					}
 				}
-				return stores.EntityEvent.Source.GetFrom(ctx.URI)
+				return stores.EntityEvent.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				root := ctx.GetRootNode()
@@ -445,15 +445,15 @@ var Entity = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
 				node := jsonc.FindNodeAtLocation(parent, jsonc.Path{"spawn_entity"})
 				if node != nil {
 					if identifier, ok := node.Value.(string); ok {
-						return stores.EntityEvent.Source.Get(identifier)
+						return stores.EntityEvent.Definition.Get(identifier)
 					}
 				}
-				return stores.EntityEvent.Source.Get()
+				return stores.EntityEvent.Definition.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
@@ -467,17 +467,17 @@ var Entity = &JsonHandler{
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.EntityFamily,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:entity/components/minecraft:type_family/family/*"),
 				shared.JsonValue("minecraft:entity/component_groups/*/minecraft:type_family/family/*"),
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.EntityFamily.Source.Get(), stores.EntityFamily.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.EntityFamily.Definition.Get(), stores.EntityFamily.References.Get())
 			},
 		},
 		{
@@ -551,8 +551,8 @@ var Entity = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
@@ -633,8 +633,8 @@ var Entity = &JsonHandler{
 				test := jsonc.FindNodeAtLocation(parent, jsonc.Path{"test"})
 				return test != nil && test.Value == "is_block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
@@ -668,7 +668,7 @@ var Entity = &JsonHandler{
 				}
 			}),
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.LootTablePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
@@ -686,7 +686,7 @@ var Entity = &JsonHandler{
 				}
 			}),
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TradeTablePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

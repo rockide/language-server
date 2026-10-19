@@ -14,11 +14,11 @@ var AnimationController = &JsonHandler{
 	Pattern: shared.AnimationControllerGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.AnimationId,
 			Path:       []shared.JsonPath{shared.JsonKey("animation_controllers/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				filtered := []core.Symbol{}
 				for _, ref := range stores.AnimationId.References.Get() {
 					if strings.HasPrefix(ref.Value, "controller.") {
@@ -41,7 +41,7 @@ var AnimationController = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
@@ -51,7 +51,7 @@ var AnimationController = &JsonHandler{
 				for _, symbol := range stores.AnimationId.References.Get(id) {
 					if !set.ContainsOne(symbol.URI) {
 						set.Add(symbol.URI)
-						res = append(res, stores.AnimationAlias.Source.GetFrom(symbol.URI)...)
+						res = append(res, stores.AnimationAlias.Definition.GetFrom(symbol.URI)...)
 					}
 				}
 				return res
@@ -73,7 +73,7 @@ var AnimationController = &JsonHandler{
 			},
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ControllerState,
 			Path:       []shared.JsonPath{shared.JsonKey("animation_controllers/*/states/*")},
 			FilterDiff: true,
@@ -83,19 +83,19 @@ var AnimationController = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
 				}
-				return stores.ControllerState.References.GetFrom(ctx.URI, id)
+				return stores.ControllerState.Definition.GetFrom(ctx.URI, id)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
 				}
-				return stores.ControllerState.Source.GetFrom(ctx.URI, id)
+				return stores.ControllerState.References.GetFrom(ctx.URI, id)
 			},
 		},
 		{
@@ -111,12 +111,12 @@ var AnimationController = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
 				}
-				return stores.ControllerState.Source.GetFrom(ctx.URI, id)
+				return stores.ControllerState.Definition.GetFrom(ctx.URI, id)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)

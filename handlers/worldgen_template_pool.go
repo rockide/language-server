@@ -11,7 +11,7 @@ var WorldgenTemplatePool = &JsonHandler{
 	Pattern: shared.WorldgenTemplatePoolGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.WorldgenTemplatePoolId,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:template_pool/description/identifier")},
 		},
@@ -27,7 +27,7 @@ var WorldgenTemplatePool = &JsonHandler{
 		},
 		{
 			Path: []shared.JsonPath{shared.JsonValue("minecraft:template_pool/elements/*/element/location")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return sliceutil.Map(stores.StructurePath.Get(), func(s core.Symbol) core.Symbol {
 					s.Value = s.Value[11:]
 					return s

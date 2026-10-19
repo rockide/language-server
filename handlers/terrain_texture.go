@@ -10,7 +10,7 @@ var TerrainTexture = &JsonHandler{
 	Pattern: shared.TerrainTextureGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.TerrainTextureId,
 			Path:       []shared.JsonPath{shared.JsonKey("texture_data/*")},
 			FilterDiff: true,
@@ -25,7 +25,7 @@ var TerrainTexture = &JsonHandler{
 				shared.JsonValue("texture_data/*/textures/*/variations/*/path"),
 			},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

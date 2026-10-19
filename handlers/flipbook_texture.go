@@ -17,7 +17,7 @@ var FlipbookTexture = &JsonHandler{
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("*/flipbook_texture")},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

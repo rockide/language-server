@@ -9,7 +9,7 @@ var Fog = &JsonHandler{
 	Pattern: shared.FogGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.FogId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:fog_settings/description/identifier")},
 			FilterDiff: true,

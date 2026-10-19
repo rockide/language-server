@@ -9,7 +9,7 @@ var WorldgenJigsaw = &JsonHandler{
 	Pattern: shared.WorldgenJigsawGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.WorldgenJigsawId,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:jigsaw/description/identifier")},
 		},

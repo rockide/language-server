@@ -17,11 +17,14 @@ var ClientEntity = &JsonHandler{
 			FilterDiff: true,
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ClientAnimationAlias,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/animations/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
+			},
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
 				for _, symbol := range stores.ClientAnimationId.References.GetFrom(ctx.URI) {
@@ -32,9 +35,6 @@ var ClientEntity = &JsonHandler{
 				}
 				return res
 			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
-			},
 		},
 		{
 			Kind:    References,
@@ -43,8 +43,8 @@ var ClientEntity = &JsonHandler{
 				shared.JsonValue("minecraft:client_entity/description/scripts/animate/*"),
 				shared.JsonKey("minecraft:client_entity/description/scripts/animate/*/*"),
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
@@ -81,7 +81,7 @@ var ClientEntity = &JsonHandler{
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/textures/*")},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

@@ -65,14 +65,14 @@ func (s *SymbolStore) Delete(uri protocol.DocumentURI) {
 }
 
 type SymbolBinding struct {
-	Source      *SymbolStore
+	Definition  *SymbolStore
 	References  *SymbolStore
 	VanillaData mapset.Set[string]
 }
 
 func NewSymbolBinding(vanillaData mapset.Set[string]) *SymbolBinding {
 	return &SymbolBinding{
-		Source:      NewSymbolStore(),
+		Definition:  NewSymbolStore(),
 		References:  NewSymbolStore(),
 		VanillaData: vanillaData,
 	}

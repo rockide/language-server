@@ -307,7 +307,11 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 			if !ok {
 				continue
 			}
-			for _, item := range entry.Source(node) {
+			candidates := entry.Definition
+			if entry.Kind == Definition {
+				candidates = entry.References
+			}
+			for _, item := range candidates(node) {
 				value := item.Value
 				if entry.Transform != nil {
 					value = entry.Transform(value)
@@ -431,7 +435,11 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 		if !ok {
 			continue
 		}
-		for _, item := range entry.Source(node) {
+		targets := entry.Definition
+		if entry.Kind == Definition {
+			targets = entry.References
+		}
+		for _, item := range targets(node) {
 			value := item.Value
 			if entry.Transform != nil {
 				value = entry.Transform(value)
@@ -520,7 +528,7 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 		if !ok || entry.DisableRename {
 			continue
 		}
-		items := slices.Concat(entry.Source(node), entry.References(node))
+		items := slices.Concat(entry.Definition(node), entry.References(node))
 		for _, item := range items {
 			if item.Value != nodeValue {
 				continue
@@ -770,8 +778,8 @@ var commandParamTokenMap = map[mcfunction.ParameterKind]semtok.Type{
 type commandEntry struct {
 	Kind    BindingKind
 	Binding *stores.SymbolBinding
-	// Overrides the default Source method
-	SourceOverride func(node mcfunction.Node) []core.Symbol
+	// Overrides the default Definition method
+	DefinitionOverride func(node mcfunction.Node) []core.Symbol
 	// Overrides the default References method
 	ReferencesOverride func(node mcfunction.Node) []core.Symbol
 	Transform          func(s string) string
@@ -785,8 +793,8 @@ func (e *commandEntry) store() *stores.SymbolStore {
 		return nil
 	}
 	switch e.Kind {
-	case Source:
-		return e.Binding.Source
+	case Definition:
+		return e.Binding.Definition
 	case References:
 		return e.Binding.References
 	default:
@@ -794,32 +802,24 @@ func (e *commandEntry) store() *stores.SymbolStore {
 	}
 }
 
-// Source returns the symbols for completions and definitions.
-// Defaults to the counterpart store of Kind: a Source entry completes from References and vice versa.
-func (e *commandEntry) Source(node mcfunction.Node) []core.Symbol {
-	if e.SourceOverride != nil {
-		return e.SourceOverride(node)
+// Definition returns the declarations. Defaults to Binding.Definition.
+func (e *commandEntry) Definition(node mcfunction.Node) []core.Symbol {
+	if e.DefinitionOverride != nil {
+		return e.DefinitionOverride(node)
 	}
 	if e.Binding == nil {
 		return nil
 	}
-	if e.Kind == Source {
-		return e.Binding.References.Get()
-	}
-	return e.Binding.Source.Get()
+	return e.Binding.Definition.Get()
 }
 
-// References returns the symbols that use the same source.
-// Defaults to the store of Kind: a Source entry references Source and vice versa.
+// References returns the usages. Defaults to Binding.References.
 func (e *commandEntry) References(node mcfunction.Node) []core.Symbol {
 	if e.ReferencesOverride != nil {
 		return e.ReferencesOverride(node)
 	}
 	if e.Binding == nil {
 		return nil
-	}
-	if e.Kind == Source {
-		return e.Binding.Source.Get()
 	}
 	return e.Binding.References.Get()
 }
@@ -840,8 +840,8 @@ var commandEntries = map[string]commandEntry{
 			return "block"
 		},
 		Namespaced: true,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
-			return stores.ItemId.Source.Get("block")
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+			return stores.ItemId.Definition.Get("block")
 		},
 		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.ItemId.References.Get("block")
@@ -887,7 +887,7 @@ var commandEntries = map[string]commandEntry{
 	},
 	mcfunction.TagFunctionFile: {
 		DisableRename: true,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.McFunctionPath.Get()
 		},
 		Transform: func(s string) string {
@@ -909,7 +909,7 @@ var commandEntries = map[string]commandEntry{
 	},
 	mcfunction.TagLootTableFile: {
 		DisableRename: true,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.LootTablePath.Get()
 		},
 		Transform: func(s string) string {
@@ -923,14 +923,14 @@ var commandEntries = map[string]commandEntry{
 		Binding: stores.MusicDefinitionId,
 	},
 	mcfunction.TagProvidedFogId: {
-		Kind:    Source,
+		Kind:    Definition,
 		Binding: stores.ProvidedFogId,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
-			return stores.ProvidedFogId.Source.Get()
-		},
-		// Source already covers every occurrence; the default would duplicate rename edits
-		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+		// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 			return nil
+		},
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return stores.ProvidedFogId.Definition.Get()
 		},
 	},
 	mcfunction.TagRecipeId: {
@@ -943,30 +943,30 @@ var commandEntries = map[string]commandEntry{
 	},
 	mcfunction.TagStructureFile: {
 		DisableRename: true,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.StructurePath.Get()
 		},
 	},
 	mcfunction.TagTagId: {
-		Kind:    Source,
+		Kind:    Definition,
 		Binding: stores.Tag,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
-			return stores.Tag.Source.Get()
-		},
-		// Source already covers every occurrence; the default would duplicate rename edits
-		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+		// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 			return nil
+		},
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return stores.Tag.Definition.Get()
 		},
 	},
 	mcfunction.TagTickingAreaId: {
-		Kind:    Source,
+		Kind:    Definition,
 		Binding: stores.TickingArea,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
-			return stores.TickingArea.Source.Get()
-		},
-		// Source already covers every occurrence; the default would duplicate rename edits
-		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+		// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 			return nil
+		},
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return stores.TickingArea.Definition.Get()
 		},
 	},
 	mcfunction.TagTypeFamilyId: {
@@ -974,14 +974,14 @@ var commandEntries = map[string]commandEntry{
 		Binding: stores.EntityFamily,
 	},
 	mcfunction.TagScoreboardObjectiveId: {
-		Kind:    Source,
+		Kind:    Definition,
 		Binding: stores.ScoreboardObjective,
-		SourceOverride: func(node mcfunction.Node) []core.Symbol {
-			return stores.ScoreboardObjective.Source.Get()
-		},
-		// Source already covers every occurrence; the default would duplicate rename edits
-		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+		// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+		DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 			return nil
+		},
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return stores.ScoreboardObjective.Definition.Get()
 		},
 	},
 }
@@ -996,14 +996,14 @@ var rawMessage = &JsonRawMessageHandler{
 					Path:    []shared.JsonPath{shared.JsonValue("rawtext/**/translate")},
 				},
 				{
-					Kind:    Source,
+					Kind:    Definition,
 					Binding: stores.ScoreboardObjective,
 					Path:    []shared.JsonPath{shared.JsonValue("rawtext/**/score/objective")},
-					SourceOverride: func(ctx *JsonContext) []core.Symbol {
-						return stores.ScoreboardObjective.Source.Get()
+					DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+						return nil
 					},
 					ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-						return nil
+						return stores.ScoreboardObjective.Definition.Get()
 					},
 				},
 			},
@@ -1065,8 +1065,8 @@ var itemNbt = &JsonSnippetHandler{
 				ScopeKey: func(ctx *JsonContext) string {
 					return "block"
 				},
-				SourceOverride: func(ctx *JsonContext) []core.Symbol {
-					return stores.ItemId.Source.Get("block")
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return stores.ItemId.Definition.Get("block")
 				},
 				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 					return stores.ItemId.References.Get("block")

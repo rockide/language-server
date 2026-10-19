@@ -84,7 +84,7 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 		}
 		set := mapset.NewThreadUnsafeSet[string]()
 		for _, binding := range values.bindings {
-			for _, ref := range binding.Source.Get() {
+			for _, ref := range binding.Definition.Get() {
 				if set.ContainsOne(ref.Value) {
 					continue
 				}
@@ -214,7 +214,7 @@ func (m *MolangHandler) Definitions(document *textdocument.TextDocument, positio
 	}
 	molangValue := token.Value[1 : len(token.Value)-1] // Exclude surrounding single quotes
 	for _, binding := range values.bindings {
-		for _, ref := range binding.Source.Get() {
+		for _, ref := range binding.Definition.Get() {
 			if ref.Value != molangValue {
 				continue
 			}

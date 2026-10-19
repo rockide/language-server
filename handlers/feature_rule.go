@@ -10,7 +10,7 @@ var FeatureRule = &JsonHandler{
 	Pattern: shared.FeatureRuleGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.FeatureRuleId,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/description/identifier")},
 		},

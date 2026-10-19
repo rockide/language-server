@@ -10,7 +10,7 @@ var SoundDefinition = &JsonHandler{
 	Pattern: shared.SoundDefinitionGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.SoundDefinitionId,
 			Path:       []shared.JsonPath{shared.JsonKey("sound_definitions/*")},
 			FilterDiff: true,
@@ -21,7 +21,7 @@ var SoundDefinition = &JsonHandler{
 				shared.JsonValue("sound_definitions/*/sounds/*/name"),
 			},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.SoundPath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

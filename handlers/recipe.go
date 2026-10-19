@@ -9,7 +9,7 @@ var Recipe = &JsonHandler{
 	Pattern: shared.RecipeGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.RecipeId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:recipe_shaped/description/identifier"),

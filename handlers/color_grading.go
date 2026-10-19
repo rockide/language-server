@@ -9,7 +9,7 @@ var ColorGrading = &JsonHandler{
 	Pattern: shared.ColorGradingGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ColorGradingId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:color_grading_settings/description/identifier")},
 			FilterDiff: true,

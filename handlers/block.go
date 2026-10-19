@@ -15,48 +15,48 @@ var Block = &JsonHandler{
 	Pattern: shared.BlockGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ItemId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:block/description/identifier")},
 			FilterDiff: true,
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+				return stores.ItemId.References.Get("block")
 			},
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.BlockState,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:block/description/states/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockState.References.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.BlockState.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockState.Source.GetFrom(ctx.URI)
+				return stores.BlockState.References.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.BlockTag,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:block/components/minecraft:tags/*"),
 				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:tags/*"),
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.BlockTag.Source.Get(), stores.BlockTag.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.BlockTag.Definition.Get(), stores.BlockTag.References.Get())
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.BlockTag,
 			Path: []shared.JsonPath{
 				shared.JsonKey("minecraft:block/components/*"),
@@ -69,11 +69,11 @@ var Block = &JsonHandler{
 				res, _ := strings.CutPrefix(value, "tag:")
 				return res
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.BlockTag.Source.Get(), stores.BlockTag.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.BlockTag.Definition.Get(), stores.BlockTag.References.Get())
 			},
 		},
 		{
@@ -108,7 +108,7 @@ var Block = &JsonHandler{
 				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:loot"),
 			},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.LootTablePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
@@ -124,17 +124,17 @@ var Block = &JsonHandler{
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.RecipeTag,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:block/components/minecraft:crafting_table/crafting_tags/*"),
 				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:crafting_table/crafting_tags/*"),
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.RecipeTag.Source.Get(), stores.RecipeTag.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.RecipeTag.Definition.Get(), stores.RecipeTag.References.Get())
 			},
 		},
 		{
@@ -153,29 +153,29 @@ var Block = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.BlockCustomComponent,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:block/components/minecraft:custom_components/*"),
 				shared.JsonValue("minecraft:block/permutations/*/components/minecraft:custom_components/*"),
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.BlockCustomComponent.Source.Get(), stores.BlockCustomComponent.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.BlockCustomComponent.Definition.Get(), stores.BlockCustomComponent.References.Get())
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.BlockCustomComponent,
 			Path: []shared.JsonPath{
 				shared.JsonKey("minecraft:block/components/*"),
@@ -192,11 +192,11 @@ var Block = &JsonHandler{
 				}
 				return false
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.BlockCustomComponent.Source.Get(), stores.BlockCustomComponent.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.BlockCustomComponent.Definition.Get(), stores.BlockCustomComponent.References.Get())
 			},
 		},
 		{

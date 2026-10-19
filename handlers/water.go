@@ -9,7 +9,7 @@ var Water = &JsonHandler{
 	Pattern: shared.WaterGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.WaterId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:water_settings/description/identifier")},
 			FilterDiff: true,

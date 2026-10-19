@@ -27,7 +27,7 @@ type JsonContext struct {
 type BindingKind uint8
 
 const (
-	Source BindingKind = iota
+	Definition BindingKind = iota
 	References
 )
 
@@ -42,8 +42,8 @@ type JsonEntry struct {
 	FilterDiff bool
 	// Function to set the scope key. If omitted will use the `defaultScope` value
 	ScopeKey func(ctx *JsonContext) string
-	// Overrides the default Source method
-	SourceOverride func(ctx *JsonContext) []core.Symbol
+	// Overrides the default Definition method
+	DefinitionOverride func(ctx *JsonContext) []core.Symbol
 	// Overrides the default References method
 	ReferencesOverride func(ctx *JsonContext) []core.Symbol
 }
@@ -53,8 +53,8 @@ func (e *JsonEntry) store() *stores.SymbolStore {
 		return nil
 	}
 	switch e.Kind {
-	case Source:
-		return e.Binding.Source
+	case Definition:
+		return e.Binding.Definition
 	case References:
 		return e.Binding.References
 	default:
@@ -63,35 +63,27 @@ func (e *JsonEntry) store() *stores.SymbolStore {
 }
 
 func (e *JsonEntry) hasSymbols() bool {
-	return e.Binding != nil || e.SourceOverride != nil || e.ReferencesOverride != nil
+	return e.Binding != nil || e.DefinitionOverride != nil || e.ReferencesOverride != nil
 }
 
-// Source returns the symbols for completions and definitions.
-// Defaults to the counterpart store of Kind: a Source entry completes from References and vice versa.
-func (e *JsonEntry) Source(ctx *JsonContext) []core.Symbol {
-	if e.SourceOverride != nil {
-		return e.SourceOverride(ctx)
+// Definition returns the declarations. Defaults to Binding.Definition.
+func (e *JsonEntry) Definition(ctx *JsonContext) []core.Symbol {
+	if e.DefinitionOverride != nil {
+		return e.DefinitionOverride(ctx)
 	}
 	if e.Binding == nil {
 		return nil
 	}
-	if e.Kind == Source {
-		return e.Binding.References.Get()
-	}
-	return e.Binding.Source.Get()
+	return e.Binding.Definition.Get()
 }
 
-// References returns the symbols that use the same source.
-// Defaults to the store of Kind: a Source entry references Source and vice versa.
+// References returns the usages. Defaults to Binding.References.
 func (e *JsonEntry) References(ctx *JsonContext) []core.Symbol {
 	if e.ReferencesOverride != nil {
 		return e.ReferencesOverride(ctx)
 	}
 	if e.Binding == nil {
 		return nil
-	}
-	if e.Kind == Source {
-		return e.Binding.Source.Get()
 	}
 	return e.Binding.References.Get()
 }
@@ -349,11 +341,16 @@ func (j *JsonHandler) Completions(document *textdocument.TextDocument, position 
 		return res
 	}
 
+	// Declarations complete from usages, usages complete from declarations
+	source, refs := entry.Definition, entry.References
+	if entry.Kind == Definition {
+		source, refs = entry.References, entry.Definition
+	}
 	var items []core.Symbol
 	if entry.FilterDiff {
-		items = difference(j.Pattern, entry.Source(ctx), entry.References(ctx))
+		items = difference(j.Pattern, source(ctx), refs(ctx))
 	} else {
-		items = entry.Source(ctx)
+		items = source(ctx)
 	}
 
 	set := mapset.NewThreadUnsafeSet[string]()
@@ -423,7 +420,11 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 		nodeValue = entry.Transform(nodeValue)
 	}
 
-	for _, item := range entry.Source(ctx) {
+	targets := entry.Definition
+	if entry.Kind == Definition {
+		targets = entry.References
+	}
+	for _, item := range targets(ctx) {
 		if item.Value != nodeValue {
 			continue
 		}
@@ -503,7 +504,7 @@ func (j *JsonHandler) Rename(document *textdocument.TextDocument, position proto
 	}
 
 	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
-	for _, item := range slices.Concat(entry.Source(ctx), entry.References(ctx)) {
+	for _, item := range slices.Concat(entry.Definition(ctx), entry.References(ctx)) {
 		if item.Value != node.Value {
 			continue
 		}

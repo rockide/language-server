@@ -11,7 +11,7 @@ var Feature = &JsonHandler{
 	Pattern: shared.FeatureGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.FeatureId,
 			Path:       []shared.JsonPath{shared.JsonValue("*/description/identifier")},
 			FilterDiff: true,
@@ -77,8 +77,8 @@ var Feature = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
@@ -102,7 +102,7 @@ var Feature = &JsonHandler{
 		},
 		{
 			Path: []shared.JsonPath{shared.JsonValue("minecraft:structure_template_feature/structure_name")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return sliceutil.Map(stores.StructurePath.Get(), func(s core.Symbol) core.Symbol {
 					s.Value = s.Value[11:]
 					return s

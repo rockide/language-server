@@ -9,7 +9,7 @@ var MusicDefintion = &JsonHandler{
 	Pattern: shared.MusicDefinitionGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.MusicDefinitionId,
 			Path:       []shared.JsonPath{shared.JsonKey("*")},
 			FilterDiff: true,

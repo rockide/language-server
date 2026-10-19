@@ -13,7 +13,7 @@ var Particle = &JsonHandler{
 	Pattern: shared.ParticleGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ParticleId,
 			Path:       []shared.JsonPath{shared.JsonValue("particle_effect/description/identifier")},
 			FilterDiff: true,
@@ -26,7 +26,7 @@ var Particle = &JsonHandler{
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("particle_effect/description/basic_render_parameters/texture")},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
@@ -34,15 +34,15 @@ var Particle = &JsonHandler{
 			},
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ParticleEvent,
 			Path:       []shared.JsonPath{shared.JsonKey("particle_effect/events/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleEvent.References.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ParticleEvent.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleEvent.Source.GetFrom(ctx.URI)
+				return stores.ParticleEvent.References.GetFrom(ctx.URI)
 			},
 		},
 		{
@@ -65,8 +65,8 @@ var Particle = &JsonHandler{
 					shared.JsonValue("particle_effect/events/**/components/" + path + "/*"),
 				}
 			}),
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleEvent.Source.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ParticleEvent.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ParticleEvent.References.GetFrom(ctx.URI)

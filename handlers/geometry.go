@@ -14,7 +14,7 @@ var Geometry = &JsonHandler{
 	Pattern: shared.GeometryGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.GeometryId,
 			Path: []shared.JsonPath{
 				shared.JsonKey("*"),
@@ -30,18 +30,18 @@ var Geometry = &JsonHandler{
 			FilterDiff: true,
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.GeometryBone,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/name")},
 			FilterDiff: true,
 			ScopeKey:   _geometryGetIdentifier,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
-				return stores.GeometryBone.References.Get(identifier)
+				return stores.GeometryBone.Definition.Get(identifier)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
-				return stores.GeometryBone.Source.Get(identifier)
+				return stores.GeometryBone.References.Get(identifier)
 			},
 		},
 		{
@@ -50,12 +50,12 @@ var Geometry = &JsonHandler{
 			Binding:  stores.GeometryBone,
 			Path:     []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/parent")},
 			ScopeKey: _geometryGetIdentifier,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
 				// Prevent self-reference
 				parent := ctx.GetParentNode()
 				name := jsonc.FindNodeAtLocation(parent, jsonc.Path{"name"})
-				result := stores.GeometryBone.Source.Get(identifier)
+				result := stores.GeometryBone.Definition.Get(identifier)
 				if name != nil {
 					return slices.DeleteFunc(result, func(symbol core.Symbol) bool {
 						return symbol.Value == name.Value
@@ -70,7 +70,7 @@ var Geometry = &JsonHandler{
 		},
 		// Older version of geometry files
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.GeometryBone,
 			Path:    []shared.JsonPath{shared.JsonValue("*/bones/*/name")},
 			Matcher: func(ctx *JsonContext) bool {
@@ -78,13 +78,13 @@ var Geometry = &JsonHandler{
 			},
 			FilterDiff: true,
 			ScopeKey:   _geometryGetOldIdentifier,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
-				return stores.GeometryBone.References.Get(identifier)
+				return stores.GeometryBone.Definition.Get(identifier)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
-				return stores.GeometryBone.Source.Get(identifier)
+				return stores.GeometryBone.References.Get(identifier)
 			},
 		},
 		{
@@ -96,12 +96,12 @@ var Geometry = &JsonHandler{
 				return _geometryGetOldIdentifier(ctx) != defaultScope
 			},
 			ScopeKey: _geometryGetOldIdentifier,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
 				// Prevent self-reference
 				parent := ctx.GetParentNode()
 				name := jsonc.FindNodeAtLocation(parent, jsonc.Path{"name"})
-				result := stores.GeometryBone.Source.Get(identifier)
+				result := stores.GeometryBone.Definition.Get(identifier)
 				if name != nil {
 					return slices.DeleteFunc(result, func(symbol core.Symbol) bool {
 						return symbol.Value == name.Value

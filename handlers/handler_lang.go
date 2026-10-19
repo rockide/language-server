@@ -49,7 +49,7 @@ func (l *LangHandler) Parse(uri protocol.DocumentURI) error {
 			End:   document.PositionAt(keyNode.Offset + uint32(len(keyNode.Value))),
 		}
 		key := children[0].Value
-		stores.Lang.Source.Insert(defaultScope, core.Symbol{
+		stores.Lang.Definition.Insert(defaultScope, core.Symbol{
 			Value: key,
 			URI:   uri,
 			Range: symbolRange,
@@ -59,7 +59,7 @@ func (l *LangHandler) Parse(uri protocol.DocumentURI) error {
 }
 
 func (l *LangHandler) Delete(uri protocol.DocumentURI) {
-	stores.Lang.Source.Delete(uri)
+	stores.Lang.Definition.Delete(uri)
 }
 
 func (l *LangHandler) Completions(document *textdocument.TextDocument, position protocol.Position) []protocol.CompletionItem {
@@ -126,12 +126,12 @@ func (l *LangHandler) Completions(document *textdocument.TextDocument, position 
 			})
 		}
 	}
-	for _, item := range stores.Lang.Source.GetFrom(document.URI) {
+	for _, item := range stores.Lang.Definition.GetFrom(document.URI) {
 		if !set.ContainsOne(item.Value) {
 			set.Add(item.Value)
 		}
 	}
-	for _, item := range stores.Lang.Source.Get() {
+	for _, item := range stores.Lang.Definition.Get() {
 		add(item.Value)
 	}
 	for _, item := range stores.Lang.References.Get() {
@@ -140,16 +140,16 @@ func (l *LangHandler) Completions(document *textdocument.TextDocument, position 
 		}
 		add(item.Value)
 	}
-	for _, item := range stores.EntityId.Source.Get() {
+	for _, item := range stores.EntityId.Definition.Get() {
 		add("entity." + item.Value + ".name")
 	}
-	for _, item := range stores.ItemId.Source.Get("block") {
+	for _, item := range stores.ItemId.Definition.Get("block") {
 		if !uriSet.ContainsOne(item.URI) {
 			uriSet.Add(item.URI)
 			add("tile." + item.Value + ".name")
 		}
 	}
-	for _, item := range stores.ItemId.Source.Get() {
+	for _, item := range stores.ItemId.Definition.Get() {
 		if !uriSet.ContainsOne(item.URI) {
 			uriSet.Add(item.URI)
 			add("item." + item.Value)
@@ -171,7 +171,7 @@ func (l *LangHandler) Definitions(document *textdocument.TextDocument, position 
 	}
 	res := []protocol.LocationLink{}
 	for _, item := range slices.Concat(
-		stores.Lang.Source.Get(),
+		stores.Lang.Definition.Get(),
 		stores.Lang.References.Get(),
 	) {
 		if item.Value != node.Value {
@@ -228,7 +228,7 @@ func (l *LangHandler) Rename(document *textdocument.TextDocument, position proto
 	}
 	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
 	for _, item := range slices.Concat(
-		stores.Lang.Source.Get(),
+		stores.Lang.Definition.Get(),
 		stores.Lang.References.Get(),
 	) {
 		if item.Value != node.Value {

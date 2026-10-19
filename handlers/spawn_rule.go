@@ -48,15 +48,15 @@ var SpawnRule = &JsonHandler{
 				}
 				return defaultScope
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				root := ctx.GetRootNode()
 				node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:spawn_rules", "description", "identifier"})
 				if node != nil {
 					if id, ok := node.Value.(string); ok {
-						return stores.EntityEvent.Source.Get(id)
+						return stores.EntityEvent.Definition.Get(id)
 					}
 				}
-				return stores.EntityEvent.Source.Get()
+				return stores.EntityEvent.Definition.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				root := ctx.GetRootNode()
@@ -81,8 +81,8 @@ var SpawnRule = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")

@@ -9,7 +9,7 @@ var RenderController = &JsonHandler{
 	Pattern: shared.RenderControllerGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.RenderControllerId,
 			Path:       []shared.JsonPath{shared.JsonKey("render_controllers/*")},
 			FilterDiff: true,

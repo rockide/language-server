@@ -14,7 +14,7 @@ var BlockCulling = &JsonHandler{
 	Pattern: shared.BlockCullingGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.BlockCullingId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:block_culling_rules/description/identifier")},
 			FilterDiff: true,
@@ -22,13 +22,13 @@ var BlockCulling = &JsonHandler{
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("minecraft:block_culling_rules/rules/*/geometry_part/bone")},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				geos := _bcGeoIdentifiers(ctx)
 				if geos == nil {
 					return nil
 				}
 				return sliceutil.FlatMap(geos, func(identifier string) []core.Symbol {
-					return stores.GeometryBone.Source.Get(identifier)
+					return stores.GeometryBone.Definition.Get(identifier)
 				})
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

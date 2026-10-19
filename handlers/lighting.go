@@ -9,7 +9,7 @@ var Lighting = &JsonHandler{
 	Pattern: shared.LightingGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.LightingId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:lighting_settings/description/identifier")},
 			FilterDiff: true,

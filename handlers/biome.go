@@ -13,20 +13,20 @@ var Biome = &JsonHandler{
 	Pattern: shared.BiomeGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.BiomeId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:biome/description/identifier")},
 			FilterDiff: true,
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.BiomeTag,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:biome/components/minecraft:tags/tags/*")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.BiomeTag.Source.Get(), stores.BiomeTag.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.BiomeTag.Definition.Get(), stores.BiomeTag.References.Get())
 			},
 		},
 		{
@@ -63,8 +63,8 @@ var Biome = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")

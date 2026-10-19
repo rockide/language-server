@@ -10,14 +10,14 @@ var WorldgenProcessor = &JsonHandler{
 	Pattern: shared.WorldgenProcessorGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.WorldgenProcessorId,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:processor_list/description/identifier")},
 		},
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("minecraft:processor_list/processors/**/rules/*/block_entity_modifier/loot_table")},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.LootTablePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
@@ -40,8 +40,8 @@ var WorldgenProcessor = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")

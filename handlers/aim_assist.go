@@ -10,7 +10,7 @@ var AimAssistPreset = &JsonHandler{
 	Pattern: shared.AimAssistPresetGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.AimAssistId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:aim_assist_preset/identifier")},
 			FilterDiff: true,
@@ -34,8 +34,8 @@ var AimAssistPreset = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
@@ -53,7 +53,7 @@ var AimAssistCategory = &JsonHandler{
 	Pattern: shared.AimAssistCategoryGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.AimAssistCategory,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:aim_assist_categories/categories/*/name")},
 			FilterDiff: true,
@@ -65,8 +65,8 @@ var AimAssistCategory = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")

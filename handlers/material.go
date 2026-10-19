@@ -11,7 +11,7 @@ var EntityMaterial = &JsonHandler{
 	Pattern: shared.EntityMaterialGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.EntityMaterial,
 			Path:    []shared.JsonPath{shared.JsonKey("materials/*")},
 			Transform: func(value string) string {
@@ -28,7 +28,7 @@ var ParticleMaterial = &JsonHandler{
 	Pattern: shared.ParticleMaterialGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.ParticleMaterial,
 			Path:    []shared.JsonPath{shared.JsonKey("materials/*")},
 			Transform: func(value string) string {

@@ -10,7 +10,7 @@ var ItemTexture = &JsonHandler{
 	Pattern: shared.ItemTextureGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ItemTextureId,
 			Path:       []shared.JsonPath{shared.JsonKey("texture_data/*")},
 			FilterDiff: true,
@@ -23,7 +23,7 @@ var ItemTexture = &JsonHandler{
 				shared.JsonValue("texture_data/*/textures/*/path"),
 			},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {

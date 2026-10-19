@@ -15,7 +15,7 @@ var Item = &JsonHandler{
 	Pattern: shared.ItemGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ItemId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:item/description/identifier")},
 			FilterDiff: true,
@@ -30,14 +30,14 @@ var Item = &JsonHandler{
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.ItemTag,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:tags/tags/*")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.ItemTag.Source.Get(), stores.ItemTag.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.ItemTag.Definition.Get(), stores.ItemTag.References.Get())
 			},
 		},
 		{
@@ -55,8 +55,8 @@ var Item = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ItemId.Definition.Get("block")
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
@@ -68,29 +68,29 @@ var Item = &JsonHandler{
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:entity_placer/entity")},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.CooldownCategory,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:cooldown/category")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.CooldownCategory.Source.Get(), stores.CooldownCategory.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.CooldownCategory.Definition.Get(), stores.CooldownCategory.References.Get())
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.ItemCustomComponent,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:custom_components/*")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.ItemCustomComponent.Source.Get(), stores.ItemCustomComponent.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.ItemCustomComponent.Definition.Get(), stores.ItemCustomComponent.References.Get())
 			},
 		},
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.ItemCustomComponent,
 			Path:    []shared.JsonPath{shared.JsonKey("minecraft:item/components/*")},
 			Matcher: func(ctx *JsonContext) bool {
@@ -104,11 +104,11 @@ var Item = &JsonHandler{
 				}
 				return false
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.ItemCustomComponent.Source.Get(), stores.ItemCustomComponent.References.Get())
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return nil
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
+				return slices.Concat(stores.ItemCustomComponent.Definition.Get(), stores.ItemCustomComponent.References.Get())
 			},
 		},
 		{

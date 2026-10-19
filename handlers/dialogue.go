@@ -9,7 +9,7 @@ var Dialogue = &JsonHandler{
 	Pattern: shared.DialogueGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:    Source,
+			Kind:    Definition,
 			Binding: stores.DialogueId,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:npc_dialogue/scenes/*/scene_tag")},
 		},

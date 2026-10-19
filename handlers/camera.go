@@ -13,7 +13,7 @@ var Camera = &JsonHandler{
 	Pattern: shared.CameraGlob,
 	Entries: []JsonEntry{
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.CameraId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:camera_preset/identifier")},
 			FilterDiff: true,
@@ -23,15 +23,15 @@ var Camera = &JsonHandler{
 			Kind:    References,
 			Binding: stores.CameraId,
 			Path:    []shared.JsonPath{shared.JsonValue("minecraft:camera_preset/inherit_from")},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				parent := ctx.GetParentNode()
 				identifier := jsonc.FindNodeAtLocation(parent, jsonc.Path{"identifier"})
 				if identifier != nil {
-					return slices.DeleteFunc(stores.CameraId.Source.Get(), func(symbol core.Symbol) bool {
+					return slices.DeleteFunc(stores.CameraId.Definition.Get(), func(symbol core.Symbol) bool {
 						return symbol.Value == identifier.Value
 					})
 				}
-				return stores.CameraId.Source.Get()
+				return stores.CameraId.Definition.Get()
 			},
 		},
 		{

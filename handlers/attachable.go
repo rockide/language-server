@@ -16,15 +16,15 @@ var Attachable = &JsonHandler{
 			FilterDiff: true,
 		},
 		{
-			Kind:       Source,
+			Kind:       Definition,
 			Binding:    stores.ClientAnimationAlias,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:attachable/description/animations/*")},
 			FilterDiff: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
+				return stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 			},
 		},
 		{
@@ -34,8 +34,8 @@ var Attachable = &JsonHandler{
 				shared.JsonKey("minecraft:attachable/description/scripts/animate/*/*"),
 				shared.JsonValue("minecraft:attachable/description/scripts/animate/*"),
 			},
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
@@ -65,7 +65,7 @@ var Attachable = &JsonHandler{
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/textures/*")},
 			DisableRename: true,
-			SourceOverride: func(ctx *JsonContext) []core.Symbol {
+			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
 			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
