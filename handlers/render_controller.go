@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
 )
@@ -10,15 +9,10 @@ var RenderController = &JsonHandler{
 	Pattern: shared.RenderControllerGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.RenderControllerId.Source,
+			Kind:       Source,
+			Binding:    stores.RenderControllerId,
 			Path:       []shared.JsonPath{shared.JsonKey("render_controllers/*")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.RenderControllerId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.RenderControllerId.Source.Get()
-			},
 		},
 	},
 	MolangLocations: []shared.JsonPath{

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
@@ -11,38 +10,23 @@ var FeatureRule = &JsonHandler{
 	Pattern: shared.FeatureRuleGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.FeatureRuleId.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/description/identifier")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureRuleId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureRuleId.Source.Get()
-			},
+			Kind:    Source,
+			Binding: stores.FeatureRuleId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/description/identifier")},
 		},
 		{
-			Store: stores.FeatureId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/description/places_feature")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.FeatureId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/description/places_feature")},
 		},
 		{
-			Store: stores.BiomeTag.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/conditions/minecraft:biome_filter/**/value")},
+			Kind:    References,
+			Binding: stores.BiomeTag,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:feature_rules/conditions/minecraft:biome_filter/**/value")},
 			Matcher: func(ctx *JsonContext) bool {
 				parent := ctx.GetParentNode()
 				test := jsonc.FindNodeAtLocation(parent, jsonc.Path{"test"})
 				return test != nil && test.Value == "has_biome_tag"
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BiomeTag.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BiomeTag.References.Get()
 			},
 		},
 	},

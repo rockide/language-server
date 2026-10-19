@@ -14,7 +14,8 @@ var Geometry = &JsonHandler{
 	Pattern: shared.GeometryGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.GeometryId.Source,
+			Kind:    Source,
+			Binding: stores.GeometryId,
 			Path: []shared.JsonPath{
 				shared.JsonKey("*"),
 				shared.JsonValue("minecraft:geometry/*/description/identifier"),
@@ -27,33 +28,29 @@ var Geometry = &JsonHandler{
 				return res
 			},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.GeometryId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.GeometryId.Source.Get()
-			},
 		},
 		{
-			Store:      stores.GeometryBone.Source,
+			Kind:       Source,
+			Binding:    stores.GeometryBone,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/name")},
 			FilterDiff: true,
 			ScopeKey:   _geometryGetIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
 				return stores.GeometryBone.References.Get(identifier)
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
 				return stores.GeometryBone.Source.Get(identifier)
 			},
 		},
 		{
 			// FIXME: Prevent circular references
-			Store:    stores.GeometryBone.References,
+			Kind:     References,
+			Binding:  stores.GeometryBone,
 			Path:     []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/parent")},
 			ScopeKey: _geometryGetIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
 				// Prevent self-reference
 				parent := ctx.GetParentNode()
@@ -66,38 +63,40 @@ var Geometry = &JsonHandler{
 				}
 				return result
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetIdentifier(ctx)
 				return stores.GeometryBone.References.Get(identifier)
 			},
 		},
 		// Older version of geometry files
 		{
-			Store: stores.GeometryBone.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("*/bones/*/name")},
+			Kind:    Source,
+			Binding: stores.GeometryBone,
+			Path:    []shared.JsonPath{shared.JsonValue("*/bones/*/name")},
 			Matcher: func(ctx *JsonContext) bool {
 				return _geometryGetOldIdentifier(ctx) != defaultScope
 			},
 			FilterDiff: true,
 			ScopeKey:   _geometryGetOldIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
 				return stores.GeometryBone.References.Get(identifier)
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
 				return stores.GeometryBone.Source.Get(identifier)
 			},
 		},
 		{
 			// FIXME: Prevent circular references
-			Store: stores.GeometryBone.References,
-			Path:  []shared.JsonPath{shared.JsonValue("*/bones/*/parent")},
+			Kind:    References,
+			Binding: stores.GeometryBone,
+			Path:    []shared.JsonPath{shared.JsonValue("*/bones/*/parent")},
 			Matcher: func(ctx *JsonContext) bool {
 				return _geometryGetOldIdentifier(ctx) != defaultScope
 			},
 			ScopeKey: _geometryGetOldIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
 				// Prevent self-reference
 				parent := ctx.GetParentNode()
@@ -110,7 +109,7 @@ var Geometry = &JsonHandler{
 				}
 				return result
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				identifier := _geometryGetOldIdentifier(ctx)
 				return stores.GeometryBone.References.Get(identifier)
 			},

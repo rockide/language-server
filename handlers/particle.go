@@ -13,49 +13,41 @@ var Particle = &JsonHandler{
 	Pattern: shared.ParticleGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.ParticleId.Source,
+			Kind:       Source,
+			Binding:    stores.ParticleId,
 			Path:       []shared.JsonPath{shared.JsonValue("particle_effect/description/identifier")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleId.Source.Get()
-			},
 		},
 		{
-			Store: stores.ParticleId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("particle_effect/events/**/particle_effect/effect")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.ParticleId,
+			Path:    []shared.JsonPath{shared.JsonValue("particle_effect/events/**/particle_effect/effect")},
 		},
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("particle_effect/description/basic_render_parameters/texture")},
 			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
 		{
-			Store:      stores.ParticleEvent.Source,
+			Kind:       Source,
+			Binding:    stores.ParticleEvent,
 			Path:       []shared.JsonPath{shared.JsonKey("particle_effect/events/*")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ParticleEvent.References.GetFrom(ctx.URI)
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ParticleEvent.Source.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Store: stores.ParticleEvent.References,
+			Kind:    References,
+			Binding: stores.ParticleEvent,
 			Path: sliceutil.FlatMap([]string{
 				"minecraft:emitter_lifetime_events/creation_event",
 				"minecraft:emitter_lifetime_events/expiration_event",
@@ -73,22 +65,17 @@ var Particle = &JsonHandler{
 					shared.JsonValue("particle_effect/events/**/components/" + path + "/*"),
 				}
 			}),
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ParticleEvent.Source.GetFrom(ctx.URI)
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ParticleEvent.References.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Store: stores.ParticleMaterial.References,
-			Path:  []shared.JsonPath{shared.JsonValue("particle_effect/description/basic_render_parameters/material")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleMaterial.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleMaterial.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.ParticleMaterial,
+			Path:    []shared.JsonPath{shared.JsonValue("particle_effect/description/basic_render_parameters/material")},
 		},
 	},
 	MolangLocations: slices.Concat(

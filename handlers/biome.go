@@ -13,28 +13,25 @@ var Biome = &JsonHandler{
 	Pattern: shared.BiomeGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.BiomeId.Source,
+			Kind:       Source,
+			Binding:    stores.BiomeId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:biome/description/identifier")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BiomeId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BiomeId.Source.Get()
-			},
 		},
 		{
-			Store: stores.BiomeTag.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:biome/components/minecraft:tags/tags/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			Kind:    Source,
+			Binding: stores.BiomeTag,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:biome/components/minecraft:tags/tags/*")},
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return slices.Concat(stores.BiomeTag.Source.Get(), stores.BiomeTag.References.Get())
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
 		{
-			Store: stores.ItemId.References,
+			Kind:    References,
+			Binding: stores.ItemId,
 			Path: sliceutil.Map([]string{
 				"minecraft:mountain_parameters/steep_material_adjustment/material",
 				"minecraft:mountain_parameters/steep_material_adjustment/material/name",
@@ -66,23 +63,18 @@ var Biome = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.Source.Get("block")
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
 			},
 		},
 		{
-			Store: stores.FeatureId.References,
+			Kind:    References,
+			Binding: stores.FeatureId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:biome/components/minecraft:forced_features/*/*/places_feature/*"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.References.Get()
 			},
 		},
 		// TODO: Add support for states.

@@ -10,27 +10,23 @@ var WorldgenProcessor = &JsonHandler{
 	Pattern: shared.WorldgenProcessorGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.WorldgenProcessorId.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:processor_list/description/identifier")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessorId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessorId.Source.Get()
-			},
+			Kind:    Source,
+			Binding: stores.WorldgenProcessorId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:processor_list/description/identifier")},
 		},
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("minecraft:processor_list/processors/**/rules/*/block_entity_modifier/loot_table")},
 			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.LootTablePath.Get()
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
 		{
-			Store: stores.ItemId.References,
+			Kind:    References,
+			Binding: stores.ItemId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block"),
 				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block_state"),
@@ -44,24 +40,19 @@ var WorldgenProcessor = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.Source.Get("block")
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
 			},
 		},
 		{
-			Store: stores.BlockTag.References,
+			Kind:    References,
+			Binding: stores.BlockTag,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/tag"),
 				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/tag"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockTag.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockTag.References.Get()
 			},
 		},
 		// TODO: Block states

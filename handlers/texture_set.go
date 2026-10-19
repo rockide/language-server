@@ -22,7 +22,7 @@ var TextureSet = &JsonHandler{
 				shared.JsonValue("minecraft:texture_set/metalness_emissive_roughness_subsurface"),
 			},
 			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				textures := stores.TexturePath.Get()
 				var result []core.Symbol
 				for _, texture := range textures {
@@ -39,7 +39,7 @@ var TextureSet = &JsonHandler{
 				}
 				return result
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},

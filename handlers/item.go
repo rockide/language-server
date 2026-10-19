@@ -15,52 +15,39 @@ var Item = &JsonHandler{
 	Pattern: shared.ItemGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.ItemId.Source,
+			Kind:       Source,
+			Binding:    stores.ItemId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:item/description/identifier")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get()
-			},
 		},
 		{
-			Store: stores.ItemTextureId.References,
+			Kind:    References,
+			Binding: stores.ItemTextureId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:item/components/minecraft:icon"),
 				shared.JsonValue("minecraft:item/components/minecraft:icon/texture"),
 				shared.JsonValue("minecraft:item/components/minecraft:icon/textures/*"),
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTextureId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTextureId.References.Get()
-			},
 		},
 		{
-			Store: stores.ItemTag.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:tags/tags/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			Kind:    Source,
+			Binding: stores.ItemTag,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:tags/tags/*")},
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return slices.Concat(stores.ItemTag.Source.Get(), stores.ItemTag.References.Get())
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
 		{
-			Store: stores.ItemId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:repairable/repair_items/*/items/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.ItemId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:repairable/repair_items/*/items/*")},
 		},
 		{
-			Store: stores.ItemId.References,
+			Kind:    References,
+			Binding: stores.ItemId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:item/components/minecraft:block_placer/block"),
 				shared.JsonValue("minecraft:item/components/minecraft:digger/destroy_speeds/*/block"),
@@ -68,46 +55,44 @@ var Item = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.Source.Get("block")
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
 			},
 		},
 		{
-			Store: stores.EntityId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:entity_placer/entity")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.EntityId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:entity_placer/entity")},
 		},
 		{
-			Store: stores.CooldownCategory.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:cooldown/category")},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			Kind:    Source,
+			Binding: stores.CooldownCategory,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:cooldown/category")},
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return slices.Concat(stores.CooldownCategory.Source.Get(), stores.CooldownCategory.References.Get())
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
 		{
-			Store: stores.ItemCustomComponent.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:custom_components/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			Kind:    Source,
+			Binding: stores.ItemCustomComponent,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:custom_components/*")},
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return slices.Concat(stores.ItemCustomComponent.Source.Get(), stores.ItemCustomComponent.References.Get())
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
 		{
-			Store: stores.ItemCustomComponent.Source,
-			Path:  []shared.JsonPath{shared.JsonKey("minecraft:item/components/*")},
+			Kind:    Source,
+			Binding: stores.ItemCustomComponent,
+			Path:    []shared.JsonPath{shared.JsonKey("minecraft:item/components/*")},
 			Matcher: func(ctx *JsonContext) bool {
 				root := ctx.GetRootNode()
 				formatNode := jsonc.FindNodeAtLocation(root, jsonc.Path{"format_version"})
@@ -119,25 +104,20 @@ var Item = &JsonHandler{
 				}
 				return false
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return slices.Concat(stores.ItemCustomComponent.Source.Get(), stores.ItemCustomComponent.References.Get())
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
 		{
-			Store: stores.Lang.References,
+			Kind:    References,
+			Binding: stores.Lang,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:item/components/minecraft:display_name"),
 				shared.JsonValue("minecraft:item/components/minecraft:display_name/value"),
 				shared.JsonValue("minecraft:item/components/minecraft:interact_button"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lang.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lang.References.Get()
 			},
 		},
 	},

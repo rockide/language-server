@@ -24,8 +24,16 @@ type JsonContext struct {
 	GetRootNode   func() *jsonc.Node
 }
 
+type BindingKind uint8
+
+const (
+	Source BindingKind = iota
+	References
+)
+
 type JsonEntry struct {
-	Store         *stores.SymbolStore
+	Kind          BindingKind
+	Binding       *stores.SymbolBinding
 	Path          []shared.JsonPath
 	Matcher       func(ctx *JsonContext) bool
 	Transform     func(value string) string
@@ -34,10 +42,58 @@ type JsonEntry struct {
 	FilterDiff bool
 	// Function to set the scope key. If omitted will use the `defaultScope` value
 	ScopeKey func(ctx *JsonContext) string
-	// Source for completions and definitions
-	Source func(ctx *JsonContext) []core.Symbol
-	// References that uses the same source
-	References func(ctx *JsonContext) []core.Symbol
+	// Overrides the default Source method
+	SourceOverride func(ctx *JsonContext) []core.Symbol
+	// Overrides the default References method
+	ReferencesOverride func(ctx *JsonContext) []core.Symbol
+}
+
+func (e *JsonEntry) store() *stores.SymbolStore {
+	if e.Binding == nil {
+		return nil
+	}
+	switch e.Kind {
+	case Source:
+		return e.Binding.Source
+	case References:
+		return e.Binding.References
+	default:
+		return nil
+	}
+}
+
+func (e *JsonEntry) hasSymbols() bool {
+	return e.Binding != nil || e.SourceOverride != nil || e.ReferencesOverride != nil
+}
+
+// Source returns the symbols for completions and definitions.
+// Defaults to the counterpart store of Kind: a Source entry completes from References and vice versa.
+func (e *JsonEntry) Source(ctx *JsonContext) []core.Symbol {
+	if e.SourceOverride != nil {
+		return e.SourceOverride(ctx)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	if e.Kind == Source {
+		return e.Binding.References.Get()
+	}
+	return e.Binding.Source.Get()
+}
+
+// References returns the symbols that use the same source.
+// Defaults to the store of Kind: a Source entry references Source and vice versa.
+func (e *JsonEntry) References(ctx *JsonContext) []core.Symbol {
+	if e.ReferencesOverride != nil {
+		return e.ReferencesOverride(ctx)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	if e.Kind == Source {
+		return e.Binding.Source.Get()
+	}
+	return e.Binding.References.Get()
 }
 
 type JsonHandler struct {
@@ -114,7 +170,8 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 	}
 
 	for _, entry := range j.Entries {
-		if entry.Store == nil {
+		store := entry.store()
+		if store == nil {
 			continue
 		}
 		for _, jsonPath := range entry.Path {
@@ -147,7 +204,7 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 				if entry.ScopeKey != nil {
 					scope = entry.ScopeKey(&ctx)
 				}
-				entry.Store.Insert(scope, core.Symbol{
+				store.Insert(scope, core.Symbol{
 					Value: nodeValue,
 					URI:   document.URI,
 					Range: &protocol.Range{
@@ -166,8 +223,8 @@ func (j *JsonHandler) Delete(uri protocol.DocumentURI) {
 		j.CommandEntry.Handler.Delete(uri)
 	}
 	for _, entry := range j.Entries {
-		if entry.Store != nil {
-			entry.Store.Delete(uri)
+		if store := entry.store(); store != nil {
+			store.Delete(uri)
 		}
 	}
 }
@@ -288,7 +345,7 @@ func (j *JsonHandler) Completions(document *textdocument.TextDocument, position 
 		}
 	}
 	entry, ctx := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil {
+	if entry == nil {
 		return res
 	}
 
@@ -300,8 +357,8 @@ func (j *JsonHandler) Completions(document *textdocument.TextDocument, position 
 	}
 
 	set := mapset.NewThreadUnsafeSet[string]()
-	if entry.Store != nil && entry.Store.VanillaData != nil {
-		set = entry.Store.VanillaData.Clone()
+	if entry.Binding != nil && entry.Binding.VanillaData != nil {
+		set = entry.Binding.VanillaData.Clone()
 	}
 
 	for _, item := range items {
@@ -354,7 +411,7 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 		res = slices.Concat(res, Molang.Definitions(doc, position))
 	}
 	entry, ctx := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil {
+	if entry == nil {
 		return res
 	}
 
@@ -404,7 +461,7 @@ func (j *JsonHandler) PrepareRename(document *textdocument.TextDocument, positio
 	}
 
 	entry, _ := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil || entry.DisableRename {
+	if entry == nil || !entry.hasSymbols() || entry.DisableRename {
 		return nil
 	}
 	// TODO: Support renaming entry that uses transform
@@ -441,7 +498,7 @@ func (j *JsonHandler) Rename(document *textdocument.TextDocument, position proto
 	}
 
 	entry, ctx := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil || entry.DisableRename {
+	if entry == nil || entry.DisableRename {
 		return nil
 	}
 

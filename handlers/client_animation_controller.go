@@ -14,10 +14,11 @@ var ClientAnimationController = &JsonHandler{
 	Pattern: shared.ClientAnimationControllerGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.ClientAnimationId.Source,
+			Kind:       Source,
+			Binding:    stores.ClientAnimationId,
 			Path:       []shared.JsonPath{shared.JsonKey("animation_controllers/*")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				filtered := []core.Symbol{}
 				for _, ref := range stores.ClientAnimationId.References.Get() {
 					if strings.HasPrefix(ref.Value, "controller.") {
@@ -26,12 +27,10 @@ var ClientAnimationController = &JsonHandler{
 				}
 				return filtered
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationId.Source.Get()
-			},
 		},
 		{
-			Store: stores.ClientAnimationAlias.References,
+			Kind:    References,
+			Binding: stores.ClientAnimationAlias,
 			Path: []shared.JsonPath{
 				shared.JsonValue("animation_controllers/*/states/*/animations/*"),
 				shared.JsonKey("animation_controllers/*/states/*/animations/*/*"),
@@ -42,7 +41,7 @@ var ClientAnimationController = &JsonHandler{
 				}
 				return defaultScope
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
@@ -57,7 +56,7 @@ var ClientAnimationController = &JsonHandler{
 				}
 				return res
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
@@ -74,7 +73,8 @@ var ClientAnimationController = &JsonHandler{
 			},
 		},
 		{
-			Store:      stores.ClientControllerState.Source,
+			Kind:       Source,
+			Binding:    stores.ClientControllerState,
 			Path:       []shared.JsonPath{shared.JsonKey("animation_controllers/*/states/*")},
 			FilterDiff: true,
 			ScopeKey: func(ctx *JsonContext) string {
@@ -83,14 +83,14 @@ var ClientAnimationController = &JsonHandler{
 				}
 				return defaultScope
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
 				}
 				return stores.ClientControllerState.References.GetFrom(ctx.URI, id)
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
@@ -99,7 +99,8 @@ var ClientAnimationController = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.ClientControllerState.References,
+			Kind:    References,
+			Binding: stores.ClientControllerState,
 			Path: []shared.JsonPath{
 				shared.JsonValue("animation_controllers/*/initial_state"),
 				shared.JsonKey("animation_controllers/*/states/*/transitions/*/*"),
@@ -110,14 +111,14 @@ var ClientAnimationController = &JsonHandler{
 				}
 				return defaultScope
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil
 				}
 				return stores.ClientControllerState.Source.GetFrom(ctx.URI, id)
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				id, ok := ctx.GetPath()[1].(string)
 				if !ok {
 					return nil

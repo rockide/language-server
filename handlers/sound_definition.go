@@ -10,15 +10,10 @@ var SoundDefinition = &JsonHandler{
 	Pattern: shared.SoundDefinitionGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.SoundDefinitionId.Source,
+			Kind:       Source,
+			Binding:    stores.SoundDefinitionId,
 			Path:       []shared.JsonPath{shared.JsonKey("sound_definitions/*")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.Source.Get()
-			},
 		},
 		{
 			Path: []shared.JsonPath{
@@ -26,10 +21,10 @@ var SoundDefinition = &JsonHandler{
 				shared.JsonValue("sound_definitions/*/sounds/*/name"),
 			},
 			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.SoundPath.Get()
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},

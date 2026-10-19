@@ -11,21 +11,17 @@ var ClientEntity = &JsonHandler{
 	Pattern: shared.ClientEntityGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.EntityId.References,
+			Kind:       References,
+			Binding:    stores.EntityId,
 			Path:       []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/identifier")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.References.Get()
-			},
 		},
 		{
-			Store:      stores.ClientAnimationAlias.Source,
+			Kind:       Source,
+			Binding:    stores.ClientAnimationAlias,
 			Path:       []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/animations/*")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
 				for _, symbol := range stores.ClientAnimationId.References.GetFrom(ctx.URI) {
@@ -36,20 +32,21 @@ var ClientEntity = &JsonHandler{
 				}
 				return res
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
 			},
 		},
 		{
-			Store: stores.ClientAnimationAlias.References,
+			Kind:    References,
+			Binding: stores.ClientAnimationAlias,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:client_entity/description/scripts/animate/*"),
 				shared.JsonKey("minecraft:client_entity/description/scripts/animate/*/*"),
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ClientAnimationAlias.Source.GetFrom(ctx.URI)
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
 				set := mapset.NewThreadUnsafeSet[string]()
 				for _, symbol := range stores.ClientAnimationId.References.GetFrom(ctx.URI) {
@@ -62,16 +59,11 @@ var ClientEntity = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.ClientAnimationId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/animations/*")},
+			Kind:    References,
+			Binding: stores.ClientAnimationId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/animations/*")},
 			ScopeKey: func(ctx *JsonContext) string {
 				return ctx.NodeValue
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationId.References.Get()
 			},
 		},
 		{
@@ -79,14 +71,9 @@ var ClientEntity = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.EntityMaterial.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/materials/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityMaterial.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityMaterial.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.EntityMaterial,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/materials/*")},
 		},
 		{
 			Path: []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/textures/*")},
@@ -94,10 +81,10 @@ var ClientEntity = &JsonHandler{
 		{
 			Path:          []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/textures/*")},
 			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.TexturePath.Get()
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
@@ -106,37 +93,22 @@ var ClientEntity = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.GeometryId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/geometry/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.GeometryId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.GeometryId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.GeometryId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/geometry/*")},
 		},
 		{
-			Store: stores.RenderControllerId.References,
+			Kind:    References,
+			Binding: stores.RenderControllerId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:client_entity/description/render_controllers/*"),
 				shared.JsonKey("minecraft:client_entity/description/render_controllers/*/*"),
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.RenderControllerId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.RenderControllerId.References.Get()
-			},
 		},
 		{
-			Store: stores.ItemTextureId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/spawn_egg/texture")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTextureId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTextureId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.ItemTextureId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/spawn_egg/texture")},
 		},
 		{
 			Path: []shared.JsonPath{
@@ -146,16 +118,11 @@ var ClientEntity = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.ParticleId.References,
+			Kind:    References,
+			Binding: stores.ParticleId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:client_entity/description/particle_effects/*"),
 				shared.JsonValue("minecraft:client_entity/description/particle_emitters/*"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleId.References.Get()
 			},
 		},
 		{
@@ -163,14 +130,9 @@ var ClientEntity = &JsonHandler{
 			// TODO
 		},
 		{
-			Store: stores.SoundDefinitionId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/sound_effects/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.SoundDefinitionId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/sound_effects/*")},
 		},
 	},
 	MolangLocations: []shared.JsonPath{

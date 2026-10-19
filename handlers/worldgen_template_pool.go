@@ -11,44 +11,29 @@ var WorldgenTemplatePool = &JsonHandler{
 	Pattern: shared.WorldgenTemplatePoolGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.WorldgenTemplatePoolId.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:template_pool/description/identifier")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePoolId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePoolId.Source.Get()
-			},
+			Kind:    Source,
+			Binding: stores.WorldgenTemplatePoolId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:template_pool/description/identifier")},
 		},
 		{
-			Store: stores.WorldgenProcessorId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:template_pool/elements/*/element/processors")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessorId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessorId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.WorldgenProcessorId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:template_pool/elements/*/element/processors")},
 		},
 		{
-			Store: stores.WorldgenTemplatePoolId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:template_pool/fallback")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePoolId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenTemplatePoolId.References.Get()
-			},
+			Kind:    References,
+			Binding: stores.WorldgenTemplatePoolId,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:template_pool/fallback")},
 		},
 		{
 			Path: []shared.JsonPath{shared.JsonValue("minecraft:template_pool/elements/*/element/location")},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return sliceutil.Map(stores.StructurePath.Get(), func(s core.Symbol) core.Symbol {
 					s.Value = s.Value[11:]
 					return s
 				})
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},

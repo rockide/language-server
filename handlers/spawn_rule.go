@@ -11,36 +11,27 @@ var SpawnRule = &JsonHandler{
 	Pattern: shared.SpawnRuleGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.EntityId.References,
+			Kind:    References,
+			Binding: stores.EntityId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:spawn_rules/description/identifier"),
 				shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:permute_type/*/entity_type"),
 				shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:delay_filter/identifier"),
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.References.Get()
-			},
 		},
 		{
-			Store: stores.BiomeTag.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:biome_filter/**/value")},
+			Kind:    References,
+			Binding: stores.BiomeTag,
+			Path:    []shared.JsonPath{shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:biome_filter/**/value")},
 			Matcher: func(ctx *JsonContext) bool {
 				parent := ctx.GetParentNode()
 				test := jsonc.FindNodeAtLocation(parent, jsonc.Path{"test"})
 				return test != nil && test.Value == "has_biome_tag"
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BiomeTag.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BiomeTag.References.Get()
-			},
 		},
 		{
-			Store: stores.EntityEvent.References,
+			Kind:    References,
+			Binding: stores.EntityEvent,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:herd/event"),
 				shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:herd/initial_event"),
@@ -57,7 +48,7 @@ var SpawnRule = &JsonHandler{
 				}
 				return defaultScope
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				root := ctx.GetRootNode()
 				node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:spawn_rules", "description", "identifier"})
 				if node != nil {
@@ -67,7 +58,7 @@ var SpawnRule = &JsonHandler{
 				}
 				return stores.EntityEvent.Source.Get()
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				root := ctx.GetRootNode()
 				node := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:spawn_rules", "description", "identifier"})
 				if node != nil {
@@ -79,7 +70,8 @@ var SpawnRule = &JsonHandler{
 			},
 		},
 		{
-			Store: stores.ItemId.References,
+			Kind:    References,
+			Binding: stores.ItemId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:spawns_on_block_filter"),
 				shared.JsonValue("minecraft:spawn_rules/conditions/*/minecraft:spawns_on_block_prevented_filter"),
@@ -89,10 +81,10 @@ var SpawnRule = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.Source.Get("block")
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
 			},
 		},

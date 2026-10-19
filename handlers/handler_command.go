@@ -50,7 +50,11 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 		}
 		for _, tag := range paramSpec.Tags {
 			entry, ok := commandEntries[tag]
-			if !ok || entry.Store == nil {
+			if !ok {
+				continue
+			}
+			store := entry.store()
+			if store == nil {
 				continue
 			}
 			scope := defaultScope
@@ -62,7 +66,7 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 			if h.Parser.EscapeQuotes() {
 				nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 			}
-			entry.Store.Insert(scope, core.Symbol{
+			store.Insert(scope, core.Symbol{
 				URI:   document.URI,
 				Value: nodeValue,
 				Range: &protocol.Range{
@@ -81,8 +85,8 @@ func (h *CommandHandler) Delete(uri protocol.DocumentURI) {
 		stores.McFunctionPath.Delete(uri)
 	}
 	for _, entry := range commandEntries {
-		if entry.Store != nil {
-			entry.Store.Delete(uri)
+		if store := entry.store(); store != nil {
+			store.Delete(uri)
 		}
 	}
 }
@@ -300,7 +304,7 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 			}
 			tagSet.Add(tag)
 			entry, ok := commandEntries[tag]
-			if !ok || entry.Source == nil {
+			if !ok {
 				continue
 			}
 			for _, item := range entry.Source(node) {
@@ -310,8 +314,8 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 				}
 				addItem(escape(value))
 			}
-			if entry.Store != nil && entry.Store.VanillaData != nil {
-				for value := range mapset.Elements(entry.Store.VanillaData) {
+			if entry.Binding != nil && entry.Binding.VanillaData != nil {
+				for value := range mapset.Elements(entry.Binding.VanillaData) {
 					if entry.Namespaced && !strings.HasPrefix(value, "minecraft:") {
 						continue
 					}
@@ -424,7 +428,7 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 	}
 	for _, tag := range paramSpec.Tags {
 		entry, ok := commandEntries[tag]
-		if !ok || entry.Source == nil {
+		if !ok {
 			continue
 		}
 		for _, item := range entry.Source(node) {
@@ -516,10 +520,7 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 		if !ok || entry.DisableRename {
 			continue
 		}
-		items := entry.Source(node)
-		if entry.References != nil {
-			items = slices.Concat(items, entry.References(node))
-		}
+		items := slices.Concat(entry.Source(node), entry.References(node))
 		for _, item := range items {
 			if item.Value != nodeValue {
 				continue
@@ -767,130 +768,126 @@ var commandParamTokenMap = map[mcfunction.ParameterKind]semtok.Type{
 }
 
 type commandEntry struct {
-	Store         *stores.SymbolStore
-	Source        func(node mcfunction.Node) []core.Symbol
-	References    func(node mcfunction.Node) []core.Symbol
-	Transform     func(s string) string
-	Scope         func(node mcfunction.Node) string
-	Namespaced    bool
-	DisableRename bool
+	Kind    BindingKind
+	Binding *stores.SymbolBinding
+	// Overrides the default Source method
+	SourceOverride func(node mcfunction.Node) []core.Symbol
+	// Overrides the default References method
+	ReferencesOverride func(node mcfunction.Node) []core.Symbol
+	Transform          func(s string) string
+	Scope              func(node mcfunction.Node) string
+	Namespaced         bool
+	DisableRename      bool
+}
+
+func (e *commandEntry) store() *stores.SymbolStore {
+	if e.Binding == nil {
+		return nil
+	}
+	switch e.Kind {
+	case Source:
+		return e.Binding.Source
+	case References:
+		return e.Binding.References
+	default:
+		return nil
+	}
+}
+
+// Source returns the symbols for completions and definitions.
+// Defaults to the counterpart store of Kind: a Source entry completes from References and vice versa.
+func (e *commandEntry) Source(node mcfunction.Node) []core.Symbol {
+	if e.SourceOverride != nil {
+		return e.SourceOverride(node)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	if e.Kind == Source {
+		return e.Binding.References.Get()
+	}
+	return e.Binding.Source.Get()
+}
+
+// References returns the symbols that use the same source.
+// Defaults to the store of Kind: a Source entry references Source and vice versa.
+func (e *commandEntry) References(node mcfunction.Node) []core.Symbol {
+	if e.ReferencesOverride != nil {
+		return e.ReferencesOverride(node)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	if e.Kind == Source {
+		return e.Binding.Source.Get()
+	}
+	return e.Binding.References.Get()
 }
 
 var commandEntries = map[string]commandEntry{
 	mcfunction.TagAimAssistId: {
-		Store: stores.AimAssistCategory.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.AimAssistCategory.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.AimAssistCategory.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.AimAssistCategory,
 	},
 	mcfunction.TagBiomeId: {
-		Store: stores.BiomeId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.BiomeId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.BiomeId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.BiomeId,
 	},
 	mcfunction.TagBlockId: {
-		Store: stores.ItemId.References,
+		Kind:    References,
+		Binding: stores.ItemId,
 		Scope: func(node mcfunction.Node) string {
 			return "block"
 		},
 		Namespaced: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.ItemId.Source.Get("block")
 		},
-		References: func(node mcfunction.Node) []core.Symbol {
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.ItemId.References.Get("block")
 		},
 	},
 	mcfunction.TagBlockState: {
-		Store: stores.BlockState.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.BlockState.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.BlockState.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.BlockState,
 	},
 	mcfunction.TagCameraId: {
-		Store: stores.CameraId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.CameraId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.CameraId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.CameraId,
 	},
 	mcfunction.TagClientAnimationId: {
-		Store: stores.ClientAnimationId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ClientAnimationId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.ClientAnimationId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.ClientAnimationId,
 	},
 	mcfunction.TagDialogueId: {
-		Store: stores.DialogueId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.DialogueId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.DialogueId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.DialogueId,
 	},
 	mcfunction.TagEntityEvent: {
 		DisableRename: true,
-		Store:         stores.EntityEvent.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityEvent.Source.Get()
-		},
+		Kind:          References,
+		Binding:       stores.EntityEvent,
 	},
 	mcfunction.TagEntityId: {
-		Store:      stores.EntityId.References,
+		Kind:       References,
+		Binding:    stores.EntityId,
 		Namespaced: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityId.References.Get()
-		},
 	},
 	mcfunction.TagFeatureId: {
-		Store: stores.FeatureId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.FeatureId,
 	},
 	mcfunction.TagFeatureRuleId: {
-		Store: stores.FeatureRuleId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureRuleId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureRuleId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.FeatureRuleId,
 	},
 	mcfunction.TagFogId: {
-		Store: stores.FogId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.FogId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.FogId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.FogId,
 	},
 	mcfunction.TagFunctionFile: {
 		DisableRename: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.McFunctionPath.Get()
 		},
 		Transform: func(s string) string {
@@ -898,36 +895,21 @@ var commandEntries = map[string]commandEntry{
 		},
 	},
 	mcfunction.TagItemId: {
-		Store:      stores.ItemId.References,
+		Kind:       References,
+		Binding:    stores.ItemId,
 		Namespaced: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ItemId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.ItemId.References.Get()
-		},
 	},
 	mcfunction.TagJigsawId: {
-		Store: stores.WorldgenJigsawId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenJigsawId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenJigsawId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.WorldgenJigsawId,
 	},
 	mcfunction.TagJigsawTemplatePoolId: {
-		Store: stores.WorldgenTemplatePoolId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenTemplatePoolId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenTemplatePoolId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.WorldgenTemplatePoolId,
 	},
 	mcfunction.TagLootTableFile: {
 		DisableRename: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.LootTablePath.Get()
 		},
 		Transform: func(s string) string {
@@ -937,69 +919,69 @@ var commandEntries = map[string]commandEntry{
 		},
 	},
 	mcfunction.TagMusicId: {
-		Store: stores.MusicDefinitionId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.MusicDefinitionId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.MusicDefinitionId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.MusicDefinitionId,
 	},
 	mcfunction.TagProvidedFogId: {
-		Store: stores.ProvidedFogId.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		Kind:    Source,
+		Binding: stores.ProvidedFogId,
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.ProvidedFogId.Source.Get()
+		},
+		// Source already covers every occurrence; the default would duplicate rename edits
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return nil
 		},
 	},
 	mcfunction.TagRecipeId: {
-		Store: stores.RecipeId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.RecipeId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.RecipeId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.RecipeId,
 	},
 	mcfunction.TagSoundId: {
-		Store: stores.SoundDefinitionId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.SoundDefinitionId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.SoundDefinitionId.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.SoundDefinitionId,
 	},
 	mcfunction.TagStructureFile: {
 		DisableRename: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.StructurePath.Get()
 		},
 	},
 	mcfunction.TagTagId: {
-		Store: stores.Tag.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		Kind:    Source,
+		Binding: stores.Tag,
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.Tag.Source.Get()
+		},
+		// Source already covers every occurrence; the default would duplicate rename edits
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return nil
 		},
 	},
 	mcfunction.TagTickingAreaId: {
-		Store: stores.TickingArea.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		Kind:    Source,
+		Binding: stores.TickingArea,
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.TickingArea.Source.Get()
+		},
+		// Source already covers every occurrence; the default would duplicate rename edits
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return nil
 		},
 	},
 	mcfunction.TagTypeFamilyId: {
-		Store: stores.EntityFamily.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityFamily.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityFamily.References.Get()
-		},
+		Kind:    References,
+		Binding: stores.EntityFamily,
 	},
 	mcfunction.TagScoreboardObjectiveId: {
-		Store: stores.ScoreboardObjective.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
+		Kind:    Source,
+		Binding: stores.ScoreboardObjective,
+		SourceOverride: func(node mcfunction.Node) []core.Symbol {
 			return stores.ScoreboardObjective.Source.Get()
+		},
+		// Source already covers every occurrence; the default would duplicate rename edits
+		ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+			return nil
 		},
 	},
 }
@@ -1009,22 +991,18 @@ var rawMessage = &JsonRawMessageHandler{
 		JsonHandler: &JsonHandler{
 			Entries: []JsonEntry{
 				{
-					Store: stores.Lang.References,
-					Path:  []shared.JsonPath{shared.JsonValue("rawtext/**/translate")},
-					Source: func(ctx *JsonContext) []core.Symbol {
-						return stores.Lang.Source.Get()
-					},
-					References: func(ctx *JsonContext) []core.Symbol {
-						return stores.Lang.References.Get()
-					},
+					Kind:    References,
+					Binding: stores.Lang,
+					Path:    []shared.JsonPath{shared.JsonValue("rawtext/**/translate")},
 				},
 				{
-					Store: stores.ScoreboardObjective.Source,
-					Path:  []shared.JsonPath{shared.JsonValue("rawtext/**/score/objective")},
-					Source: func(ctx *JsonContext) []core.Symbol {
+					Kind:    Source,
+					Binding: stores.ScoreboardObjective,
+					Path:    []shared.JsonPath{shared.JsonValue("rawtext/**/score/objective")},
+					SourceOverride: func(ctx *JsonContext) []core.Symbol {
 						return stores.ScoreboardObjective.Source.Get()
 					},
-					References: func(ctx *JsonContext) []core.Symbol {
+					ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 						return nil
 					},
 				},
@@ -1078,7 +1056,8 @@ var itemNbt = &JsonSnippetHandler{
 	JsonHandler: &JsonHandler{
 		Entries: []JsonEntry{
 			{
-				Store: stores.ItemId.References,
+				Kind:    References,
+				Binding: stores.ItemId,
 				Path: []shared.JsonPath{
 					shared.JsonValue("minecraft:can_place_on/blocks/*"),
 					shared.JsonValue("minecraft:can_destroy/blocks/*"),
@@ -1086,10 +1065,10 @@ var itemNbt = &JsonSnippetHandler{
 				ScopeKey: func(ctx *JsonContext) string {
 					return "block"
 				},
-				Source: func(ctx *JsonContext) []core.Symbol {
+				SourceOverride: func(ctx *JsonContext) []core.Symbol {
 					return stores.ItemId.Source.Get("block")
 				},
-				References: func(ctx *JsonContext) []core.Symbol {
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 					return stores.ItemId.References.Get("block")
 				},
 			},

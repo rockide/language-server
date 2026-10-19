@@ -11,15 +11,13 @@ import (
 )
 
 type SymbolStore struct {
-	store       map[string][]core.Symbol
-	mu          sync.RWMutex
-	VanillaData mapset.Set[string]
+	store map[string][]core.Symbol
+	mu    sync.RWMutex
 }
 
-func NewSymbolStore(vanillaData mapset.Set[string]) *SymbolStore {
+func NewSymbolStore() *SymbolStore {
 	return &SymbolStore{
-		store:       make(map[string][]core.Symbol),
-		VanillaData: vanillaData,
+		store: make(map[string][]core.Symbol),
 	}
 }
 
@@ -67,14 +65,16 @@ func (s *SymbolStore) Delete(uri protocol.DocumentURI) {
 }
 
 type SymbolBinding struct {
-	Source     *SymbolStore
-	References *SymbolStore
+	Source      *SymbolStore
+	References  *SymbolStore
+	VanillaData mapset.Set[string]
 }
 
 func NewSymbolBinding(vanillaData mapset.Set[string]) *SymbolBinding {
 	return &SymbolBinding{
-		Source:     NewSymbolStore(vanillaData),
-		References: NewSymbolStore(vanillaData),
+		Source:      NewSymbolStore(),
+		References:  NewSymbolStore(),
+		VanillaData: vanillaData,
 	}
 }
 

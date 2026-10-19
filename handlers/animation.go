@@ -12,10 +12,11 @@ var Animation = &JsonHandler{
 	Pattern: shared.AnimationGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.AnimationId.Source,
+			Kind:       Source,
+			Binding:    stores.AnimationId,
 			Path:       []shared.JsonPath{shared.JsonKey("animations/*")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				filtered := []core.Symbol{}
 				for _, ref := range stores.AnimationId.References.Get() {
 					if strings.HasPrefix(ref.Value, "animation.") {
@@ -23,9 +24,6 @@ var Animation = &JsonHandler{
 					}
 				}
 				return filtered
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.AnimationId.Source.Get()
 			},
 		},
 	},

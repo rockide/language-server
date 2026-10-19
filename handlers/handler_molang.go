@@ -99,10 +99,10 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 					},
 				})
 			}
-			if binding.Source.VanillaData == nil {
+			if binding.VanillaData == nil {
 				continue
 			}
-			for value := range binding.Source.VanillaData.Iter() {
+			for value := range binding.VanillaData.Iter() {
 				if set.ContainsOne(value) {
 					continue
 				}

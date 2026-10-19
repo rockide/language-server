@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
 )
@@ -10,7 +9,8 @@ var ClientSound = &JsonHandler{
 	Pattern: shared.ClientSoundGlob,
 	Entries: []JsonEntry{
 		{
-			Store: stores.SoundDefinitionId.References,
+			Kind:    References,
+			Binding: stores.SoundDefinitionId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("block_sounds/*/events/*"),
 				shared.JsonValue("block_sounds/*/events/*/sound"),
@@ -25,24 +25,13 @@ var ClientSound = &JsonHandler{
 				shared.JsonValue("interactive_sounds/*/*/events/*"),
 				shared.JsonValue("interactive_sounds/*/*/events/*/sound"),
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.References.Get()
-			},
 		},
 		{
-			Store: stores.EntityId.References,
+			Kind:    References,
+			Binding: stores.EntityId,
 			Path: []shared.JsonPath{
 				shared.JsonKey("entity_sounds/entities/*"),
 				shared.JsonKey("interactive_sounds/entity_sounds/entities/*"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.References.Get()
 			},
 		},
 	},

@@ -11,18 +11,14 @@ var Feature = &JsonHandler{
 	Pattern: shared.FeatureGlob,
 	Entries: []JsonEntry{
 		{
-			Store:      stores.FeatureId.Source,
+			Kind:       Source,
+			Binding:    stores.FeatureId,
 			Path:       []shared.JsonPath{shared.JsonValue("*/description/identifier")},
 			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.Source.Get()
-			},
 		},
 		{
-			Store: stores.ItemId.References,
+			Kind:    References,
+			Binding: stores.ItemId,
 			Path: sliceutil.FlatMap([]string{
 				"minecraft:catalyst_feature/can_place_sculk_catalyst_on/*",
 				"minecraft:catalyst_feature/central_block",
@@ -81,15 +77,16 @@ var Feature = &JsonHandler{
 			ScopeKey: func(ctx *JsonContext) string {
 				return "block"
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.Source.Get("block")
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return stores.ItemId.References.Get("block")
 			},
 		},
 		{
-			Store: stores.FeatureId.References,
+			Kind:    References,
+			Binding: stores.FeatureId,
 			Path: []shared.JsonPath{
 				shared.JsonValue("minecraft:aggregate_feature/features/*"),
 				shared.JsonValue("minecraft:catalyst_feature/central_patch_feature"),
@@ -102,22 +99,16 @@ var Feature = &JsonHandler{
 				shared.JsonValue("minecraft:vegetation_patch_feature/vegetation_feature"),
 				shared.JsonValue("minecraft:weighted_random_feature/features/*/0"),
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.FeatureId.References.Get()
-			},
 		},
 		{
 			Path: []shared.JsonPath{shared.JsonValue("minecraft:structure_template_feature/structure_name")},
-			Source: func(ctx *JsonContext) []core.Symbol {
+			SourceOverride: func(ctx *JsonContext) []core.Symbol {
 				return sliceutil.Map(stores.StructurePath.Get(), func(s core.Symbol) core.Symbol {
 					s.Value = s.Value[11:]
 					return s
 				})
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
+			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
 				return nil
 			},
 		},
