@@ -36,6 +36,7 @@ func Initialize(ctx context.Context, conn *jsonrpc2.Conn, params *protocol.Initi
 				TriggerCharacters: triggerCharacters,
 			},
 			DefinitionProvider: &protocol.Or_ServerCapabilities_definitionProvider{Value: true},
+			ReferencesProvider: &protocol.Or_ServerCapabilities_referencesProvider{Value: true},
 			RenameProvider: &protocol.RenameOptions{
 				PrepareProvider: true,
 			},

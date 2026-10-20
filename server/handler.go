@@ -61,6 +61,11 @@ func Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (re
 		if err = json.Unmarshal(*req.Params, &params); err == nil {
 			res, err = Definition(ctx, conn, &params)
 		}
+	case "textDocument/references":
+		var params protocol.ReferenceParams
+		if err = json.Unmarshal(*req.Params, &params); err == nil {
+			res, err = References(ctx, conn, &params)
+		}
 	case "textDocument/prepareRename":
 		var params protocol.PrepareRenameParams
 		if err = json.Unmarshal(*req.Params, &params); err == nil {

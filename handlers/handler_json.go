@@ -420,11 +420,7 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 		nodeValue = entry.Transform(nodeValue)
 	}
 
-	targets := entry.Definition
-	if entry.Kind == Definition {
-		targets = entry.References
-	}
-	for _, item := range targets(ctx) {
+	for _, item := range entry.Definition(ctx) {
 		if item.Value != nodeValue {
 			continue
 		}
@@ -438,6 +434,62 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 		if item.Range != nil {
 			location.TargetRange = *item.Range
 			location.TargetSelectionRange = *item.Range
+		}
+		res = append(res, location)
+	}
+	return res
+}
+
+func (j *JsonHandler) References(document *textdocument.TextDocument, position protocol.Position, includeDeclaration bool) []protocol.Location {
+	offset := document.OffsetAt(position)
+	location := jsonc.GetLocation(document.GetText(), offset)
+	node := location.PreviousNode
+	if node == nil {
+		return nil
+	}
+
+	res := []protocol.Location{}
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		res = entry.Handler.References(doc, position, includeDeclaration)
+	}
+	if j.isMolangLocation(location) {
+		doc := document.CreateVirtualDocument(protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		})
+		res = slices.Concat(res, Molang.References(doc, position, includeDeclaration))
+	}
+	entry, ctx := j.prepareContext(document, location)
+	if entry == nil {
+		return res
+	}
+
+	nodeValue, ok := node.Value.(string)
+	if !ok {
+		return res
+	}
+	if entry.Transform != nil {
+		nodeValue = entry.Transform(nodeValue)
+	}
+
+	symbols := entry.References(ctx)
+	if includeDeclaration {
+		symbols = slices.Concat(entry.Definition(ctx), symbols)
+	}
+	for _, item := range symbols {
+		if item.Value != nodeValue {
+			continue
+		}
+		location := protocol.Location{
+			URI: item.URI,
+		}
+		if item.Range != nil {
+			location.Range = *item.Range
 		}
 		res = append(res, location)
 	}

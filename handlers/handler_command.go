@@ -435,11 +435,7 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 		if !ok {
 			continue
 		}
-		targets := entry.Definition
-		if entry.Kind == Definition {
-			targets = entry.References
-		}
-		for _, item := range targets(node) {
+		for _, item := range entry.Definition(node) {
 			value := item.Value
 			if entry.Transform != nil {
 				value = entry.Transform(value)
@@ -454,6 +450,59 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 			if item.Range != nil {
 				location.TargetRange = *item.Range
 				location.TargetSelectionRange = *item.Range
+			}
+			result = append(result, location)
+		}
+	}
+	return result
+}
+
+func (h *CommandHandler) References(document *textdocument.TextDocument, position protocol.Position, includeDeclaration bool) []protocol.Location {
+	result := []protocol.Location{}
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
+	line := parsed.Content
+	if root == nil {
+		return nil
+	}
+	node := mcfunction.NodeAt(root, rOffset)
+	nodeSpec, ok := node.(mcfunction.ParamNode)
+	if !ok {
+		return result
+	}
+	paramSpec, ok := nodeSpec.ParamSpec()
+	if !ok {
+		return result
+	}
+	nodeValue := node.Text(line)
+	if h.Parser.EscapeQuotes() {
+		nodeValue = strings.Trim(nodeValue, `\"`)
+	} else {
+		nodeValue = strings.Trim(nodeValue, `"`)
+	}
+	for _, tag := range paramSpec.Tags {
+		entry, ok := commandEntries[tag]
+		if !ok {
+			continue
+		}
+		symbols := entry.References(node)
+		if includeDeclaration {
+			symbols = slices.Concat(entry.Definition(node), symbols)
+		}
+		for _, item := range symbols {
+			value := item.Value
+			if entry.Transform != nil {
+				value = entry.Transform(value)
+			}
+			if value != nodeValue {
+				continue
+			}
+			location := protocol.Location{
+				URI: item.URI,
+			}
+			if item.Range != nil {
+				location.Range = *item.Range
 			}
 			result = append(result, location)
 		}

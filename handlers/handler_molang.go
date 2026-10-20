@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"slices"
 	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
@@ -225,6 +226,64 @@ func (m *MolangHandler) Definitions(document *textdocument.TextDocument, positio
 			if ref.Range != nil {
 				location.TargetRange = *ref.Range
 				location.TargetSelectionRange = *ref.Range
+			}
+			res = append(res, location)
+		}
+	}
+	return res
+}
+
+func (m *MolangHandler) References(document *textdocument.TextDocument, position protocol.Position, includeDeclaration bool) []protocol.Location {
+	parser, err := molang.NewParser(document.GetText())
+	if err != nil {
+		log.Printf("Molang error: %v", err)
+		return nil
+	}
+	offset := document.OffsetAt(position)
+	index := parser.FindIndex(offset)
+	if index == -1 {
+		return nil
+	}
+
+	token := parser.Tokens[index]
+	methodCall := parser.GetMethodCall(offset)
+	if token.Kind != molang.KindString || methodCall == nil {
+		return nil
+	}
+	method, ok := molang.GetMethod(methodCall.Prefix, methodCall.Name)
+	if !ok {
+		return nil
+	}
+	params := method.Signature.GetParams()
+	param := params[len(params)-1]
+	if methodCall.ParamIndex < len(params) {
+		param = params[methodCall.ParamIndex]
+	}
+	getTypeValues := molangTypes[param.Type]
+	if getTypeValues == nil {
+		log.Printf("Unknown param tokenType: %s", param.Type)
+		return nil
+	}
+	res := []protocol.Location{}
+	values := getTypeValues()
+	if values.bindings == nil {
+		return nil
+	}
+	molangValue := token.Value[1 : len(token.Value)-1] // Exclude surrounding single quotes
+	for _, binding := range values.bindings {
+		refs := binding.References.Get()
+		if includeDeclaration {
+			refs = slices.Concat(binding.Definition.Get(), refs)
+		}
+		for _, ref := range refs {
+			if ref.Value != molangValue {
+				continue
+			}
+			location := protocol.Location{
+				URI: ref.URI,
+			}
+			if ref.Range != nil {
+				location.Range = *ref.Range
 			}
 			res = append(res, location)
 		}

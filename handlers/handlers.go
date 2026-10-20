@@ -23,6 +23,10 @@ type DefinitionProvider interface {
 	Definitions(document *textdocument.TextDocument, position protocol.Position) []protocol.LocationLink
 }
 
+type ReferencesProvider interface {
+	References(document *textdocument.TextDocument, position protocol.Position, includeDeclaration bool) []protocol.Location
+}
+
 type RenameProvider interface {
 	PrepareRename(document *textdocument.TextDocument, position protocol.Position) *protocol.PrepareRenamePlaceholder
 	Rename(document *textdocument.TextDocument, position protocol.Position, newName string) *protocol.WorkspaceEdit
