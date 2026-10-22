@@ -3,7 +3,8 @@ package core
 import (
 	"path/filepath"
 
-	"github.com/rockide/language-server/internal/protocol"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type Project struct {
@@ -24,6 +25,6 @@ func NewProject(bp string, rp string) *Project {
 
 type Symbol struct {
 	Value string
-	URI   protocol.DocumentURI
+	URI   uri.URI
 	Range *protocol.Range
 }

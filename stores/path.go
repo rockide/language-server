@@ -8,9 +8,9 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/vanilla"
+	"go.lsp.dev/uri"
 )
 
 type PathStore struct {
@@ -24,12 +24,12 @@ func NewPathStore(vanillaData mapset.Set[string], trimSuffixes ...string) *PathS
 	return &PathStore{trimSuffixes: trimSuffixes, VanillaData: vanillaData}
 }
 
-func (s *PathStore) Insert(pattern shared.Pattern, uri protocol.DocumentURI) {
+func (s *PathStore) Insert(pattern shared.Pattern, uri uri.URI) {
 	packDir, ok := pattern.PackDir()
 	if !ok {
 		return
 	}
-	path, err := filepath.Rel(shared.Getwd(), uri.Path())
+	path, err := filepath.Rel(shared.Getwd(), uri.FsPath())
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +56,7 @@ func (s *PathStore) Get() []core.Symbol {
 	return slices.Clone(s.store)
 }
 
-func (s *PathStore) Delete(uri protocol.DocumentURI) {
+func (s *PathStore) Delete(uri uri.URI) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.store = slices.DeleteFunc(s.store, func(symbol core.Symbol) bool {

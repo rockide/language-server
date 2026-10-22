@@ -7,10 +7,10 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/internal/molang"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/sliceutil"
 	"github.com/rockide/language-server/internal/textdocument"
+	"go.lsp.dev/protocol"
 )
 
 type MolangHandler struct{}
@@ -31,12 +31,10 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 		return sliceutil.Map(molang.Prefixes, func(value string) protocol.CompletionItem {
 			return protocol.CompletionItem{
 				Label: value,
-				Kind:  protocol.ClassCompletion,
-				TextEdit: &protocol.Or_CompletionItem_textEdit{
-					Value: protocol.TextEdit{
-						NewText: value,
-						Range:   editRange,
-					},
+				Kind:  protocol.CompletionItemKindClass,
+				TextEdit: &protocol.TextEdit{
+					NewText: value,
+					Range:   editRange,
 				},
 			}
 		})
@@ -74,11 +72,9 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 			res = sliceutil.Map(values.literals, func(value string) protocol.CompletionItem {
 				return protocol.CompletionItem{
 					Label: value,
-					TextEdit: &protocol.Or_CompletionItem_textEdit{
-						Value: protocol.TextEdit{
-							NewText: value,
-							Range:   editRange,
-						},
+					TextEdit: &protocol.TextEdit{
+						NewText: value,
+						Range:   editRange,
 					},
 				}
 			})
@@ -92,11 +88,9 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 				set.Add(ref.Value)
 				res = append(res, protocol.CompletionItem{
 					Label: ref.Value,
-					TextEdit: &protocol.Or_CompletionItem_textEdit{
-						Value: protocol.TextEdit{
-							NewText: ref.Value,
-							Range:   editRange,
-						},
+					TextEdit: &protocol.TextEdit{
+						NewText: ref.Value,
+						Range:   editRange,
 					},
 				})
 			}
@@ -109,13 +103,11 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 				}
 				set.Add(value)
 				res = append(res, protocol.CompletionItem{
-					Kind:  protocol.ValueCompletion,
+					Kind:  protocol.CompletionItemKindValue,
 					Label: value,
-					TextEdit: &protocol.Or_CompletionItem_textEdit{
-						Value: protocol.TextEdit{
-							NewText: value,
-							Range:   editRange,
-						},
+					TextEdit: &protocol.TextEdit{
+						NewText: value,
+						Range:   editRange,
 					},
 				})
 			}
@@ -129,12 +121,10 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 		return sliceutil.Map(molang.Prefixes, func(value string) protocol.CompletionItem {
 			return protocol.CompletionItem{
 				Label: value,
-				Kind:  protocol.ClassCompletion,
-				TextEdit: &protocol.Or_CompletionItem_textEdit{
-					Value: protocol.TextEdit{
-						NewText: value,
-						Range:   editRange,
-					},
+				Kind:  protocol.CompletionItemKindClass,
+				TextEdit: &protocol.TextEdit{
+					NewText: value,
+					Range:   editRange,
 				},
 			}
 		})
@@ -157,18 +147,14 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 		value := prefix.Value + "." + method.Name
 		return protocol.CompletionItem{
 			Label: value,
-			Kind:  protocol.MethodCompletion,
-			TextEdit: &protocol.Or_CompletionItem_textEdit{
-				Value: protocol.TextEdit{
-					Range:   editRange,
-					NewText: value,
-				},
+			Kind:  protocol.CompletionItemKindMethod,
+			TextEdit: &protocol.TextEdit{
+				Range:   editRange,
+				NewText: value,
 			},
-			Detail: method.Name + string(method.Signature),
-			Documentation: &protocol.Or_CompletionItem_documentation{
-				Value: method.Description,
-			},
-			Deprecated: method.Deprecated,
+			Detail:        protocol.NewOptional(method.Name + string(method.Signature)),
+			Documentation: protocol.String(method.Description),
+			Deprecated:    protocol.NewOptional(method.Deprecated),
 		}
 	})
 }
@@ -324,14 +310,14 @@ func (m *MolangHandler) Hover(document *textdocument.TextDocument, position prot
 		return nil
 	}
 	return &protocol.Hover{
-		Contents: protocol.MarkupContent{
-			Kind: protocol.Markdown,
+		Contents: &protocol.MarkupContent{
+			Kind: protocol.MarkupKindMarkdown,
 			Value: "```rockide-molang\n" +
 				prefix.Value + "." + method.Name + string(method.Signature) +
 				"\n```\n" +
 				method.Description,
 		},
-		Range: protocol.Range{
+		Range: &protocol.Range{
 			Start: document.PositionAt(prefix.Offset),
 			End:   document.PositionAt(token.Offset + token.Length),
 		},
@@ -359,14 +345,12 @@ func (m *MolangHandler) SignatureHelp(document *textdocument.TextDocument, posit
 		activeParam = min(activeParam, len(params)-1)
 	}
 	signature := protocol.SignatureInformation{
-		Label: methodCall.Prefix + "." + method.Name + string(method.Signature),
-		Documentation: &protocol.Or_SignatureInformation_documentation{
-			Value: method.Description,
-		},
+		Label:         methodCall.Prefix + "." + method.Name + string(method.Signature),
+		Documentation: protocol.String(method.Description),
 		Parameters: sliceutil.Map(params, func(param molang.Parameter) protocol.ParameterInformation {
-			return protocol.ParameterInformation{Label: param.ToString()}
+			return protocol.ParameterInformation{Label: protocol.String(param.ToString())}
 		}),
-		ActiveParameter: uint32(activeParam),
+		ActiveParameter: protocol.NewNullable(uint32(activeParam)),
 	}
 	return &protocol.SignatureHelp{
 		Signatures: []protocol.SignatureInformation{signature},

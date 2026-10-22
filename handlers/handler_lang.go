@@ -7,12 +7,13 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/lang"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/sliceutil"
 	"github.com/rockide/language-server/internal/textdocument"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type LangHandler struct {
@@ -24,7 +25,7 @@ func (l *LangHandler) GetPattern() shared.Pattern {
 	return l.Pattern
 }
 
-func (l *LangHandler) Parse(uri protocol.DocumentURI) error {
+func (l *LangHandler) Parse(uri uri.URI) error {
 	if !l.Client {
 		return nil
 	}
@@ -58,7 +59,7 @@ func (l *LangHandler) Parse(uri protocol.DocumentURI) error {
 	return nil
 }
 
-func (l *LangHandler) Delete(uri protocol.DocumentURI) {
+func (l *LangHandler) Delete(uri uri.URI) {
 	stores.Lang.Definition.Delete(uri)
 }
 
@@ -89,11 +90,9 @@ func (l *LangHandler) Completions(document *textdocument.TextDocument, position 
 					value := "§" + string(r)
 					res = append(res, protocol.CompletionItem{
 						Label: value + " - " + item.Description,
-						TextEdit: &protocol.Or_CompletionItem_textEdit{
-							Value: protocol.TextEdit{
-								NewText: value,
-								Range:   editRange,
-							},
+						TextEdit: &protocol.TextEdit{
+							NewText: value,
+							Range:   editRange,
 						},
 					})
 				}
@@ -111,17 +110,15 @@ func (l *LangHandler) Completions(document *textdocument.TextDocument, position 
 	}
 	res := []protocol.CompletionItem{}
 	set := mapset.NewThreadUnsafeSet[string]()
-	uriSet := mapset.NewThreadUnsafeSet[protocol.DocumentURI]()
+	uriSet := mapset.NewThreadUnsafeSet[uri.URI]()
 	add := func(value string) {
 		if !set.ContainsOne(value) {
 			set.Add(value)
 			res = append(res, protocol.CompletionItem{
 				Label: value,
-				TextEdit: &protocol.Or_CompletionItem_textEdit{
-					Value: protocol.TextEdit{
-						NewText: value,
-						Range:   editRange,
-					},
+				TextEdit: &protocol.TextEdit{
+					NewText: value,
+					Range:   editRange,
 				},
 			})
 		}
@@ -226,7 +223,7 @@ func (l *LangHandler) Rename(document *textdocument.TextDocument, position proto
 	if node == nil || node.Kind != lang.NodeKey {
 		return nil
 	}
-	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
+	changes := make(map[uri.URI][]protocol.TextEdit)
 	for _, item := range slices.Concat(
 		stores.Lang.Definition.Get(),
 		stores.Lang.References.Get(),
@@ -273,8 +270,8 @@ func (l *LangHandler) Hover(document *textdocument.TextDocument, position protoc
 	switch first := entry.Children()[0]; first.Kind {
 	case lang.NodeComment:
 		result = &protocol.Hover{
-			Contents: protocol.MarkupContent{
-				Kind:  protocol.PlainText,
+			Contents: &protocol.MarkupContent{
+				Kind:  protocol.MarkupKindPlainText,
 				Value: strings.TrimPrefix(first.Value, "##"),
 			},
 		}
@@ -304,8 +301,8 @@ func (l *LangHandler) Hover(document *textdocument.TextDocument, position protoc
 			value += strings.Join(arr, "")
 		}
 		result = &protocol.Hover{
-			Contents: protocol.MarkupContent{
-				Kind:  protocol.Markdown,
+			Contents: &protocol.MarkupContent{
+				Kind:  protocol.MarkupKindMarkdown,
 				Value: value,
 			},
 		}

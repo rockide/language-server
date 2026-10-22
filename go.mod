@@ -6,6 +6,10 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.7.1
 	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/rockide/vanilla v1.26.50
-	github.com/sourcegraph/jsonrpc2 v0.2.0
-	golang.org/x/mod v0.31.0
+	go.lsp.dev/jsonrpc2 v1.0.1
+	go.lsp.dev/protocol v1.0.1
+	go.lsp.dev/uri v1.0.1
+	golang.org/x/mod v0.36.0
 )
+
+require github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68 // indirect

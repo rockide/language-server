@@ -5,9 +5,9 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
+	"go.lsp.dev/uri"
 )
 
 var AnimationController = &JsonHandler{
@@ -47,7 +47,7 @@ var AnimationController = &JsonHandler{
 					return nil
 				}
 				res := []core.Symbol{}
-				set := mapset.NewThreadUnsafeSet[protocol.DocumentURI]()
+				set := mapset.NewThreadUnsafeSet[uri.URI]()
 				for _, symbol := range stores.AnimationId.References.Get(id) {
 					if !set.ContainsOne(symbol.URI) {
 						set.Add(symbol.URI)
@@ -62,7 +62,7 @@ var AnimationController = &JsonHandler{
 					return nil
 				}
 				res := stores.AnimationAlias.References.Get(id)
-				set := mapset.NewThreadUnsafeSet[protocol.DocumentURI]()
+				set := mapset.NewThreadUnsafeSet[uri.URI]()
 				for _, symbol := range stores.AnimationId.References.Get(id) {
 					if !set.ContainsOne(symbol.URI) {
 						set.Add(symbol.URI)

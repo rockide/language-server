@@ -4,10 +4,10 @@ import (
 	"log"
 
 	"github.com/rockide/language-server/handlers"
-	"github.com/rockide/language-server/internal/protocol"
+	"go.lsp.dev/uri"
 )
 
-func onCreate(uri protocol.DocumentURI) {
+func onCreate(uri uri.URI) {
 	handler := handlers.Find(uri)
 	if handler == nil {
 		return
@@ -18,7 +18,7 @@ func onCreate(uri protocol.DocumentURI) {
 	}
 }
 
-func onChange(uri protocol.DocumentURI) {
+func onChange(uri uri.URI) {
 	handler := handlers.Find(uri)
 	if handler == nil {
 		return
@@ -30,7 +30,7 @@ func onChange(uri protocol.DocumentURI) {
 	}
 }
 
-func onDelete(uri protocol.DocumentURI) {
+func onDelete(uri uri.URI) {
 	handler := handlers.Find(uri)
 	if handler == nil {
 		return

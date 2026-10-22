@@ -4,8 +4,8 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/language-server/shared"
+	"go.lsp.dev/protocol"
 )
 
 func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core.Symbol {
@@ -29,5 +29,9 @@ func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core
 }
 
 func isInside(r protocol.Range, p protocol.Position) bool {
-	return protocol.ComparePosition(p, r.Start) != -1 && protocol.ComparePosition(p, r.End) != 1
+	return !isBefore(p, r.Start) && !isBefore(r.End, p)
+}
+
+func isBefore(a, b protocol.Position) bool {
+	return a.Line < b.Line || (a.Line == b.Line && a.Character < b.Character)
 }

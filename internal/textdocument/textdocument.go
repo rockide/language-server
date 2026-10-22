@@ -5,11 +5,12 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/rockide/language-server/internal/protocol"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type TextDocument struct {
-	URI         protocol.DocumentURI `json:"uri"`
+	URI         uri.URI `json:"uri"`
 	content     []rune
 	lineOffsets []uint32
 }
@@ -124,30 +125,30 @@ func (d *TextDocument) CreateVirtualDocument(ranges ...protocol.Range) *TextDocu
 }
 
 var (
-	documents = make(map[protocol.DocumentURI]*TextDocument)
+	documents = make(map[uri.URI]*TextDocument)
 	mu        sync.RWMutex
 )
 
-func Get(uri protocol.DocumentURI) *TextDocument {
+func Get(uri uri.URI) *TextDocument {
 	mu.RLock()
 	defer mu.RUnlock()
 	return documents[uri]
 }
 
-func Open(uri protocol.DocumentURI, txt string) {
+func Open(uri uri.URI, txt string) {
 	mu.Lock()
 	defer mu.Unlock()
 	document := TextDocument{URI: uri, content: []rune(txt)}
 	documents[uri] = &document
 }
 
-func Close(uri protocol.DocumentURI) {
+func Close(uri uri.URI) {
 	mu.Lock()
 	defer mu.Unlock()
 	delete(documents, uri)
 }
 
-func SyncIncremental(uri protocol.DocumentURI, contentChanges []protocol.TextDocumentContentChangeEvent) {
+func SyncIncremental(uri uri.URI, contentChanges []protocol.TextDocumentContentChangeEvent) {
 	if len(contentChanges) == 0 {
 		return
 	}
@@ -156,19 +157,19 @@ func SyncIncremental(uri protocol.DocumentURI, contentChanges []protocol.TextDoc
 		return
 	}
 	for _, change := range contentChanges {
-		if change.Range == nil {
+		switch change := change.(type) {
+		case *protocol.TextDocumentContentChangeWholeDocument:
 			document.content = []rune(change.Text)
-			document.lineOffsets = nil
-			continue
+		case *protocol.TextDocumentContentChangePartial:
+			startOffset := document.OffsetAt(change.Range.Start)
+			endOffset := document.OffsetAt(change.Range.End)
+			document.content = slices.Concat(document.content[:startOffset], []rune(change.Text), document.content[endOffset:])
 		}
-		startOffset := document.OffsetAt(change.Range.Start)
-		endOffset := document.OffsetAt(change.Range.End)
-		document.content = slices.Concat(document.content[:startOffset], []rune(change.Text), document.content[endOffset:])
 		document.lineOffsets = nil
 	}
 }
 
-func SyncFull(uri protocol.DocumentURI, txt *string) {
+func SyncFull(uri uri.URI, txt *string) {
 	if txt == nil {
 		return
 	}
@@ -180,8 +181,8 @@ func SyncFull(uri protocol.DocumentURI, txt *string) {
 	document.lineOffsets = nil
 }
 
-func ReadFile(uri protocol.DocumentURI) (*TextDocument, error) {
-	b, err := os.ReadFile(uri.Path())
+func ReadFile(uri uri.URI) (*TextDocument, error) {
+	b, err := os.ReadFile(uri.FsPath())
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +190,7 @@ func ReadFile(uri protocol.DocumentURI) (*TextDocument, error) {
 	return &document, nil
 }
 
-func GetOrReadFile(uri protocol.DocumentURI) (*TextDocument, error) {
+func GetOrReadFile(uri uri.URI) (*TextDocument, error) {
 	if document := Get(uri); document != nil {
 		return document, nil
 	}

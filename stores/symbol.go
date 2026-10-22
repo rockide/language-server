@@ -6,8 +6,8 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/vanilla"
+	"go.lsp.dev/uri"
 )
 
 type SymbolStore struct {
@@ -44,7 +44,7 @@ func (s *SymbolStore) Get(scopes ...string) []core.Symbol {
 	return res
 }
 
-func (s *SymbolStore) GetFrom(uri protocol.DocumentURI, scopes ...string) []core.Symbol {
+func (s *SymbolStore) GetFrom(uri uri.URI, scopes ...string) []core.Symbol {
 	res := []core.Symbol{}
 	for _, symbol := range s.Get(scopes...) {
 		if symbol.URI == uri {
@@ -54,7 +54,7 @@ func (s *SymbolStore) GetFrom(uri protocol.DocumentURI, scopes ...string) []core
 	return res
 }
 
-func (s *SymbolStore) Delete(uri protocol.DocumentURI) {
+func (s *SymbolStore) Delete(uri uri.URI) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for scope, symbols := range s.store {

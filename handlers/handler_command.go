@@ -8,12 +8,13 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/mcfunction"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/sliceutil"
 	"github.com/rockide/language-server/internal/textdocument"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type CommandHandler struct {
@@ -25,8 +26,8 @@ func (h *CommandHandler) GetPattern() shared.Pattern {
 	return h.Pattern
 }
 
-func (h *CommandHandler) Parse(uri protocol.DocumentURI) error {
-	if strings.HasSuffix(uri.Path(), ".mcfunction") {
+func (h *CommandHandler) Parse(uri uri.URI) error {
+	if strings.HasSuffix(uri.FsPath(), ".mcfunction") {
 		stores.McFunctionPath.Insert(h.Pattern, uri)
 	}
 	document, err := textdocument.GetOrReadFile(uri)
@@ -80,8 +81,8 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 	return nil
 }
 
-func (h *CommandHandler) Delete(uri protocol.DocumentURI) {
-	if strings.HasSuffix(uri.Path(), ".mcfunction") {
+func (h *CommandHandler) Delete(uri uri.URI) {
+	if strings.HasSuffix(uri.FsPath(), ".mcfunction") {
 		stores.McFunctionPath.Delete(uri)
 	}
 	for _, entry := range commandEntries {
@@ -165,13 +166,11 @@ func (h *CommandHandler) commandCompletions(editRange protocol.Range, prefix str
 		value := prefix + name
 		result = append(result, protocol.CompletionItem{
 			Label:  value,
-			Detail: spec.Description,
-			Kind:   protocol.MethodCompletion,
-			TextEdit: &protocol.Or_CompletionItem_textEdit{
-				Value: protocol.TextEdit{
-					NewText: value,
-					Range:   editRange,
-				},
+			Detail: protocol.NewOptional(spec.Description),
+			Kind:   protocol.CompletionItemKindMethod,
+			TextEdit: &protocol.TextEdit{
+				NewText: value,
+				Range:   editRange,
 			},
 		})
 	}
@@ -206,11 +205,9 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 		result = append(result, protocol.CompletionItem{
 			Label: label,
 			Kind:  k,
-			TextEdit: &protocol.Or_CompletionItem_textEdit{
-				Value: protocol.TextEdit{
-					NewText: value,
-					Range:   editRange,
-				},
+			TextEdit: &protocol.TextEdit{
+				NewText: value,
+				Range:   editRange,
 			},
 		})
 	}
@@ -218,7 +215,7 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 	paramCompletions = func(param *mcfunction.ParameterSpec) {
 		if len(param.Literals) > 0 {
 			for _, lit := range param.Literals {
-				addItem(escape(lit), protocol.KeywordCompletion)
+				addItem(escape(lit), protocol.CompletionItemKindKeyword)
 			}
 		}
 		switch param.Kind {
@@ -227,8 +224,8 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 		case mcfunction.ParameterKindInteger:
 			addItem("0")
 		case mcfunction.ParameterKindBoolean:
-			addItem("true", protocol.KeywordCompletion)
-			addItem("false", protocol.KeywordCompletion)
+			addItem("true", protocol.CompletionItemKindKeyword)
+			addItem("false", protocol.CompletionItemKindKeyword)
 		case mcfunction.ParameterKindSelector:
 			for sel, ok := range h.Parser.GetSelectors() {
 				if ok {
@@ -238,16 +235,16 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 		case mcfunction.ParameterKindMap:
 			result = append(result, protocol.CompletionItem{
 				Label:            "[]",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       "[$1=$0]",
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional("[$1=$0]"),
 			})
 		case mcfunction.ParameterKindMapJSON, mcfunction.ParameterKindJSON:
 			result = append(result, protocol.CompletionItem{
 				Label:            "{}",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       "{$0}",
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional("{$0}"),
 			})
 		case mcfunction.ParameterKindVector2:
 			addItem("~~")
@@ -275,21 +272,21 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 			}
 		case mcfunction.ParameterKindCommand:
 			for name := range h.Parser.RegisteredCommands() {
-				addItem(name, protocol.MethodCompletion)
+				addItem(name, protocol.CompletionItemKindMethod)
 			}
 		case mcfunction.ParameterKindRawMessage:
 			result = append(result, protocol.CompletionItem{
 				Label:            "Raw Message Snippet...",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       escape(`{"rawtext":[$0]}`),
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional(escape(`{"rawtext":[$0]}`)),
 			})
 		case mcfunction.ParameterKindItemNbt:
 			result = append(result, protocol.CompletionItem{
 				Label:            "Item NBT Snippet...",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       escape(`{$0}`),
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional(escape(`{$0}`)),
 			})
 		case mcfunction.ParameterKindRelativeNumber:
 			addItem("~")
@@ -323,7 +320,7 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 					if entry.Namespaced && !strings.HasPrefix(value, "minecraft:") {
 						continue
 					}
-					addItem(escape(value), protocol.EnumCompletion)
+					addItem(escape(value), protocol.CompletionItemKindEnum)
 				}
 			}
 		}
@@ -362,12 +359,10 @@ func (h *CommandHandler) mapCompletions(node mcfunction.ArgNode, cursorRange pro
 		for _, key := range keys {
 			result = append(result, protocol.CompletionItem{
 				Label: key,
-				Kind:  protocol.FieldCompletion,
-				TextEdit: &protocol.Or_CompletionItem_textEdit{
-					Value: protocol.TextEdit{
-						NewText: key,
-						Range:   editRange,
-					},
+				Kind:  protocol.CompletionItemKindField,
+				TextEdit: &protocol.TextEdit{
+					NewText: key,
+					Range:   editRange,
 				},
 			})
 		}
@@ -571,7 +566,7 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 	if h.Parser.EscapeQuotes() {
 		nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 	}
-	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
+	changes := make(map[uri.URI][]protocol.TextEdit)
 	for _, tag := range paramSpec.Tags {
 		entry, ok := commandEntries[tag]
 		if !ok || entry.DisableRename {
@@ -583,7 +578,7 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 				continue
 			}
 			var newText string
-			if strings.HasSuffix(item.URI.Path(), ".json") {
+			if strings.HasSuffix(item.URI.FsPath(), ".json") {
 				newText = strings.ReplaceAll(newName, `"`, `\"`)
 			} else {
 				newText = newName
@@ -623,8 +618,8 @@ func (h *CommandHandler) Hover(document *textdocument.TextDocument, position pro
 		return nil
 	}
 	return &protocol.Hover{
-		Contents: protocol.MarkupContent{
-			Kind: protocol.Markdown,
+		Contents: &protocol.MarkupContent{
+			Kind: protocol.MarkupKindMarkdown,
 			Value: "```\n" +
 				commandNode.CommandName() +
 				"\n```\n" +
@@ -674,16 +669,14 @@ func (h *CommandHandler) SignatureHelp(document *textdocument.TextDocument, posi
 			paramLabels[j] = p.ToString()
 		}
 		signatures = append(signatures, protocol.SignatureInformation{
-			Label: commandNode.CommandName() + " " + strings.Join(paramLabels, " "),
-			Documentation: &protocol.Or_SignatureInformation_documentation{
-				Value: spec.Description,
-			},
+			Label:         commandNode.CommandName() + " " + strings.Join(paramLabels, " "),
+			Documentation: protocol.String(spec.Description),
 			Parameters: sliceutil.Map(paramLabels, func(label string) protocol.ParameterInformation {
 				return protocol.ParameterInformation{
-					Label: label,
+					Label: protocol.String(label),
 				}
 			}),
-			ActiveParameter: index,
+			ActiveParameter: protocol.NewNullable(index),
 		})
 	}
 	return &protocol.SignatureHelp{

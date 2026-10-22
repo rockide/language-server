@@ -4,15 +4,16 @@ import (
 	"path/filepath"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/language-server/internal/textdocument"
 	"github.com/rockide/language-server/shared"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type Handler interface {
 	GetPattern() shared.Pattern
-	Parse(uri protocol.DocumentURI) error
-	Delete(uri protocol.DocumentURI)
+	Parse(uri uri.URI) error
+	Delete(uri uri.URI)
 }
 
 type CompletionProvider interface {
@@ -105,8 +106,8 @@ func GetAll() []Handler {
 	return handlerList
 }
 
-func Find(uri protocol.DocumentURI) Handler {
-	path := filepath.ToSlash(uri.Path())
+func Find(uri uri.URI) Handler {
+	path := filepath.ToSlash(uri.FsPath())
 	for _, handler := range handlerList {
 		pattern, ok := handler.GetPattern().ToString()
 		if ok && doublestar.MatchUnvalidated("**/"+pattern, path) {

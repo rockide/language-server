@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/internal/pathutil"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
 )
@@ -24,10 +25,11 @@ var TextureSet = &JsonHandler{
 			DisableRename: true,
 			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 				textures := stores.TexturePath.Get()
+				dir := filepath.Dir(ctx.URI.FsPath())
 				var result []core.Symbol
 				for _, texture := range textures {
-					if ctx.URI.Dir().Encloses(texture.URI) && !strings.HasSuffix(texture.URI.Path(), ".json") {
-						relativePath, err := filepath.Rel(ctx.URI.DirPath(), texture.URI.Path())
+					if pathutil.InDir(dir, texture.URI.FsPath()) && !strings.HasSuffix(texture.URI.FsPath(), ".json") {
+						relativePath, err := filepath.Rel(dir, texture.URI.FsPath())
 						if err != nil {
 							continue
 						}

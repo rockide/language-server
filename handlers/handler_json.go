@@ -7,17 +7,18 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/textdocument"
 	"github.com/rockide/language-server/shared"
 	"github.com/rockide/language-server/stores"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 const defaultScope = "__default__"
 
 type JsonContext struct {
-	URI           protocol.DocumentURI
+	URI           uri.URI
 	NodeValue     string
 	GetPath       func() jsonc.Path
 	GetParentNode func() *jsonc.Node
@@ -129,7 +130,7 @@ func (j *JsonHandler) GetPattern() shared.Pattern {
 	return j.Pattern
 }
 
-func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
+func (j *JsonHandler) Parse(uri uri.URI) error {
 	if j.PathStore != nil {
 		j.PathStore.Insert(j.Pattern, uri)
 	}
@@ -210,7 +211,7 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 	return nil
 }
 
-func (j *JsonHandler) Delete(uri protocol.DocumentURI) {
+func (j *JsonHandler) Delete(uri uri.URI) {
 	if j.CommandEntry.Handler != nil {
 		j.CommandEntry.Handler.Delete(uri)
 	}
@@ -368,14 +369,12 @@ func (j *JsonHandler) Completions(document *textdocument.TextDocument, position 
 			Label: value,
 		}
 		if node != nil {
-			completion.TextEdit = &protocol.Or_CompletionItem_textEdit{
-				Value: protocol.TextEdit{
-					Range: protocol.Range{
-						Start: document.PositionAt(node.Offset),
-						End:   document.PositionAt(node.Offset + node.Length),
-					},
-					NewText: value,
+			completion.TextEdit = &protocol.TextEdit{
+				Range: protocol.Range{
+					Start: document.PositionAt(node.Offset),
+					End:   document.PositionAt(node.Offset + node.Length),
 				},
+				NewText: value,
 			}
 		}
 		res = append(res, completion)
@@ -555,7 +554,7 @@ func (j *JsonHandler) Rename(document *textdocument.TextDocument, position proto
 		return nil
 	}
 
-	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
+	changes := make(map[uri.URI][]protocol.TextEdit)
 	for _, item := range slices.Concat(entry.Definition(ctx), entry.References(ctx)) {
 		if item.Value != node.Value {
 			continue

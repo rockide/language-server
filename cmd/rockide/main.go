@@ -6,22 +6,21 @@ import (
 	"fmt"
 
 	"github.com/rockide/language-server/server"
-	"github.com/sourcegraph/jsonrpc2"
+	"go.lsp.dev/jsonrpc2"
+	"go.lsp.dev/protocol"
 )
 
-type rockideHandler struct {
-	jsonrpc2.Handler
-}
-
-func (h rockideHandler) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) {
-	switch req.Method {
-	case "textDocument/didOpen",
-		"textDocument/didChange",
-		"textDocument/didSave",
-		"textDocument/didClose":
-		h.Handler.Handle(ctx, conn, req)
-	default:
-		go h.Handler.Handle(ctx, conn, req)
+func rockideHandler(handler jsonrpc2.Handler) jsonrpc2.Handler {
+	return func(ctx context.Context, req *jsonrpc2.Request) (any, error) {
+		switch req.Method() {
+		case protocol.MethodTextDocumentDidOpen,
+			protocol.MethodTextDocumentDidChange,
+			protocol.MethodTextDocumentDidSave,
+			protocol.MethodTextDocumentDidClose:
+		default:
+			jsonrpc2.Async(ctx)
+		}
+		return handler(ctx, req)
 	}
 }
 
@@ -35,8 +34,11 @@ func main() {
 		return
 	}
 
-	ctx := context.Background()
-	handler := jsonrpc2.HandlerWithError(server.Handle)
-	stream := jsonrpc2.NewBufferedStream(&stdio{}, jsonrpc2.VSCodeObjectCodec{})
-	<-jsonrpc2.NewConn(ctx, stream, rockideHandler{handler}).DisconnectNotify()
+	conn := jsonrpc2.NewConn(jsonrpc2.NewStream(&stdio{}))
+	client := protocol.ClientDispatcher(conn)
+	ctx := protocol.WithClient(context.Background(), client)
+	handler := protocol.CancelHandler(rockideHandler(protocol.ServerHandler(&server.Server{}, jsonrpc2.MethodNotFoundHandler)))
+
+	conn.Go(ctx, handler)
+	<-conn.Done()
 }

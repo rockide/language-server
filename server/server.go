@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,10 +13,17 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/handlers"
-	"github.com/rockide/language-server/internal/protocol"
+	"go.lsp.dev/uri"
 )
 
-func findProjectPaths(options *protocol.InitializationOptions) (*core.Project, error) {
+type InitializationOptions struct {
+	ProjectPaths *struct {
+		BehaviorPack string `json:"behaviorPack,omitzero"`
+		ResourcePack string `json:"resourcePack,omitzero"`
+	} `json:"projectPaths,omitempty"`
+}
+
+func findProjectPaths(options *InitializationOptions) (*core.Project, error) {
 	// try to get project paths from user settings
 	if options != nil && options.ProjectPaths != nil {
 		paths := options.ProjectPaths
@@ -77,8 +85,14 @@ func indexWorkspace() {
 				if d.IsDir() {
 					return nil
 				}
-				uri := protocol.URIFromPath(path)
-				err := store.Parse(uri)
+				absPath, err := filepath.Abs(path)
+				if err != nil {
+					log.Printf("Error parsing file: %s\n\t%s", path, err)
+					skippedFiles.Add(1)
+					return nil
+				}
+				uri := uri.File(absPath)
+				err = store.Parse(uri)
 				if err != nil {
 					log.Printf("Error parsing file: %s\n\t%s", path, err)
 					skippedFiles.Add(1)
