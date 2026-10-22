@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"path/filepath"
+
 	"github.com/bmatcuk/doublestar/v4"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
@@ -16,7 +18,7 @@ func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core
 	res := []core.Symbol{}
 	set := mapset.NewThreadUnsafeSet[string]()
 	for _, ref := range b {
-		if doublestar.MatchUnvalidated("**/"+s, string(ref.URI)) {
+		if doublestar.MatchUnvalidated("**/"+s, filepath.ToSlash(ref.URI.FsPath())) {
 			set.Add(ref.Value)
 		}
 	}
