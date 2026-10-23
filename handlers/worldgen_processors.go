@@ -2,68 +2,60 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var WorldgenProcessor = &JsonHandler{
-	Pattern: shared.WorldgenProcessorGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.WorldgenProcessorId.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:processor_list/description/identifier")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessorId.References.Get()
+func WorldgenProcessor(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/worldgen/processors/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:    Definition,
+				Binding: workspace.WorldgenProcessorId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:processor_list/description/identifier")},
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenProcessorId.Source.Get()
+			{
+				Path:          []core.JsonPath{core.JsonValue("minecraft:processor_list/processors/**/rules/*/block_entity_modifier/loot_table")},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.LootTablePath.Get()
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
 			},
+			{
+				Kind:    References,
+				Binding: workspace.ItemId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block_state"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block_state/name"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/block"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/block_state"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/block_state/name"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/output_state"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/output_state/name"),
+				},
+				ScopeKey: func(ctx *JsonContext) string {
+					return "block"
+				},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ItemId.Definition.Get("block")
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ItemId.References.Get("block")
+				},
+			},
+			{
+				Kind:    References,
+				Binding: workspace.BlockTag,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/tag"),
+					core.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/tag"),
+				},
+			},
+			// TODO: Block states
 		},
-		{
-			Path:          []shared.JsonPath{shared.JsonValue("minecraft:processor_list/processors/**/rules/*/block_entity_modifier/loot_table")},
-			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.LootTablePath.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
-			},
-		},
-		{
-			Store: stores.ItemId.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block_state"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/block_state/name"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/block"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/block_state"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/block_state/name"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/output_state"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/output_state/name"),
-			},
-			ScopeKey: func(ctx *JsonContext) string {
-				return "block"
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get("block")
-			},
-		},
-		{
-			Store: stores.BlockTag.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/input_predicate/tag"),
-				shared.JsonValue("minecraft:processor_list/processors/**/rules/*/location_predicate/tag"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockTag.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockTag.References.Get()
-			},
-		},
-		// TODO: Block states
-	},
+	}
 }

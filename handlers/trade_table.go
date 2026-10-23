@@ -2,28 +2,24 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var TradeTable = &JsonHandler{
-	Pattern:   shared.TradeTableGlob,
-	PathStore: stores.TradeTablePath,
-	Entries: []JsonEntry{
-		{
-			Store: stores.ItemId.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("tiers/*/groups/*/trades/*/gives/*/item"),
-				shared.JsonValue("tiers/*/groups/*/trades/*/wants/*/item"),
-				shared.JsonValue("tiers/*/trades/*/gives/*/item"),
-				shared.JsonValue("tiers/*/trades/*/wants/*/item"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get()
+func TradeTable(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/trading/**/*.json"),
+		PathStore: workspace.TradeTablePath,
+		Entries: []JsonEntry{
+			{
+				Kind:    References,
+				Binding: workspace.ItemId,
+				Path: []core.JsonPath{
+					core.JsonValue("tiers/*/groups/*/trades/*/gives/*/item"),
+					core.JsonValue("tiers/*/groups/*/trades/*/wants/*/item"),
+					core.JsonValue("tiers/*/trades/*/gives/*/item"),
+					core.JsonValue("tiers/*/trades/*/wants/*/item"),
+				},
 			},
 		},
-	},
+	}
 }

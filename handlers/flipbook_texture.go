@@ -2,32 +2,28 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var FlipbookTexture = &JsonHandler{
-	Pattern: shared.FlipbookTextureGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.TerrainTextureId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("*/atlas_tile")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTextureId.Source.Get()
+func FlipbookTexture(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/textures/flipbook_textures.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:    References,
+				Binding: workspace.TerrainTextureId,
+				Path:    []core.JsonPath{core.JsonValue("*/atlas_tile")},
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTextureId.References.Get()
-			},
-		},
-		{
-			Path:          []shared.JsonPath{shared.JsonValue("*/flipbook_texture")},
-			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TexturePath.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
+			{
+				Path:          []core.JsonPath{core.JsonValue("*/flipbook_texture")},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.TexturePath.Get()
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
 			},
 		},
-	},
+	}
 }

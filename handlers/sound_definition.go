@@ -2,36 +2,32 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var SoundDefinition = &JsonHandler{
-	Pattern: shared.SoundDefinitionGlob,
-	Entries: []JsonEntry{
-		{
-			Store:      stores.SoundDefinitionId.Source,
-			Path:       []shared.JsonPath{shared.JsonKey("sound_definitions/*")},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.References.Get()
+func SoundDefinition(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/sounds/sound_definitions.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.SoundDefinitionId,
+				Path:       []core.JsonPath{core.JsonKey("sound_definitions/*")},
+				FilterDiff: true,
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.Source.Get()
-			},
-		},
-		{
-			Path: []shared.JsonPath{
-				shared.JsonValue("sound_definitions/*/sounds/*"),
-				shared.JsonValue("sound_definitions/*/sounds/*/name"),
-			},
-			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundPath.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
+			{
+				Path: []core.JsonPath{
+					core.JsonValue("sound_definitions/*/sounds/*"),
+					core.JsonValue("sound_definitions/*/sounds/*/name"),
+				},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.SoundPath.Get()
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
 			},
 		},
-	},
+	}
 }

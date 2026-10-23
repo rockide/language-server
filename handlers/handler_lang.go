@@ -7,28 +7,28 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/lang"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/sliceutil"
 	"github.com/rockide/language-server/internal/textdocument"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type LangHandler struct {
-	Pattern shared.Pattern
-	Client  bool
+	Workspace *core.Workspace
+	Pattern   core.Pattern
+	Client    bool
 }
 
-func (l *LangHandler) GetPattern() shared.Pattern {
+func (l *LangHandler) GetPattern() core.Pattern {
 	return l.Pattern
 }
 
-func (l *LangHandler) Parse(uri protocol.DocumentURI) error {
+func (l *LangHandler) Parse(uri uri.URI) error {
 	if !l.Client {
 		return nil
 	}
-	document, err := textdocument.GetOrReadFile(uri)
+	document, err := l.Workspace.Documents.GetOrReadFile(uri)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func (l *LangHandler) Parse(uri protocol.DocumentURI) error {
 			End:   document.PositionAt(keyNode.Offset + uint32(len(keyNode.Value))),
 		}
 		key := children[0].Value
-		stores.Lang.Source.Insert(defaultScope, core.Symbol{
+		l.Workspace.Lang.Definition.Insert(defaultScope, core.Symbol{
 			Value: key,
 			URI:   uri,
 			Range: symbolRange,
@@ -58,8 +58,8 @@ func (l *LangHandler) Parse(uri protocol.DocumentURI) error {
 	return nil
 }
 
-func (l *LangHandler) Delete(uri protocol.DocumentURI) {
-	stores.Lang.Source.Delete(uri)
+func (l *LangHandler) Delete(uri uri.URI) {
+	l.Workspace.Lang.Definition.Delete(uri)
 }
 
 func (l *LangHandler) Completions(document *textdocument.TextDocument, position protocol.Position) []protocol.CompletionItem {
@@ -89,11 +89,9 @@ func (l *LangHandler) Completions(document *textdocument.TextDocument, position 
 					value := "§" + string(r)
 					res = append(res, protocol.CompletionItem{
 						Label: value + " - " + item.Description,
-						TextEdit: &protocol.Or_CompletionItem_textEdit{
-							Value: protocol.TextEdit{
-								NewText: value,
-								Range:   editRange,
-							},
+						TextEdit: &protocol.TextEdit{
+							NewText: value,
+							Range:   editRange,
 						},
 					})
 				}
@@ -111,45 +109,43 @@ func (l *LangHandler) Completions(document *textdocument.TextDocument, position 
 	}
 	res := []protocol.CompletionItem{}
 	set := mapset.NewThreadUnsafeSet[string]()
-	uriSet := mapset.NewThreadUnsafeSet[protocol.DocumentURI]()
+	uriSet := mapset.NewThreadUnsafeSet[uri.URI]()
 	add := func(value string) {
 		if !set.ContainsOne(value) {
 			set.Add(value)
 			res = append(res, protocol.CompletionItem{
 				Label: value,
-				TextEdit: &protocol.Or_CompletionItem_textEdit{
-					Value: protocol.TextEdit{
-						NewText: value,
-						Range:   editRange,
-					},
+				TextEdit: &protocol.TextEdit{
+					NewText: value,
+					Range:   editRange,
 				},
 			})
 		}
 	}
-	for _, item := range stores.Lang.Source.GetFrom(document.URI) {
+	for _, item := range l.Workspace.Lang.Definition.GetFrom(document.URI) {
 		if !set.ContainsOne(item.Value) {
 			set.Add(item.Value)
 		}
 	}
-	for _, item := range stores.Lang.Source.Get() {
+	for _, item := range l.Workspace.Lang.Definition.Get() {
 		add(item.Value)
 	}
-	for _, item := range stores.Lang.References.Get() {
+	for _, item := range l.Workspace.Lang.References.Get() {
 		if !uriSet.ContainsOne(item.URI) {
 			uriSet.Add(item.URI)
 		}
 		add(item.Value)
 	}
-	for _, item := range stores.EntityId.Source.Get() {
+	for _, item := range l.Workspace.EntityId.Definition.Get() {
 		add("entity." + item.Value + ".name")
 	}
-	for _, item := range stores.ItemId.Source.Get("block") {
+	for _, item := range l.Workspace.ItemId.Definition.Get("block") {
 		if !uriSet.ContainsOne(item.URI) {
 			uriSet.Add(item.URI)
 			add("tile." + item.Value + ".name")
 		}
 	}
-	for _, item := range stores.ItemId.Source.Get() {
+	for _, item := range l.Workspace.ItemId.Definition.Get() {
 		if !uriSet.ContainsOne(item.URI) {
 			uriSet.Add(item.URI)
 			add("item." + item.Value)
@@ -171,8 +167,8 @@ func (l *LangHandler) Definitions(document *textdocument.TextDocument, position 
 	}
 	res := []protocol.LocationLink{}
 	for _, item := range slices.Concat(
-		stores.Lang.Source.Get(),
-		stores.Lang.References.Get(),
+		l.Workspace.Lang.Definition.Get(),
+		l.Workspace.Lang.References.Get(),
 	) {
 		if item.Value != node.Value {
 			continue
@@ -226,10 +222,10 @@ func (l *LangHandler) Rename(document *textdocument.TextDocument, position proto
 	if node == nil || node.Kind != lang.NodeKey {
 		return nil
 	}
-	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
+	changes := make(map[uri.URI][]protocol.TextEdit)
 	for _, item := range slices.Concat(
-		stores.Lang.Source.Get(),
-		stores.Lang.References.Get(),
+		l.Workspace.Lang.Definition.Get(),
+		l.Workspace.Lang.References.Get(),
 	) {
 		if item.Value != node.Value {
 			continue
@@ -273,8 +269,8 @@ func (l *LangHandler) Hover(document *textdocument.TextDocument, position protoc
 	switch first := entry.Children()[0]; first.Kind {
 	case lang.NodeComment:
 		result = &protocol.Hover{
-			Contents: protocol.MarkupContent{
-				Kind:  protocol.PlainText,
+			Contents: &protocol.MarkupContent{
+				Kind:  protocol.MarkupKindPlainText,
 				Value: strings.TrimPrefix(first.Value, "##"),
 			},
 		}
@@ -304,8 +300,8 @@ func (l *LangHandler) Hover(document *textdocument.TextDocument, position protoc
 			value += strings.Join(arr, "")
 		}
 		result = &protocol.Hover{
-			Contents: protocol.MarkupContent{
-				Kind:  protocol.Markdown,
+			Contents: &protocol.MarkupContent{
+				Kind:  protocol.MarkupKindMarkdown,
 				Value: value,
 			},
 		}
@@ -417,11 +413,17 @@ var langModifierMap = map[byte]semtok.Modifier{
 	'o': semtok.ModItalic,
 }
 
-var ClientLang = &LangHandler{
-	Pattern: shared.ClientLangGlob,
-	Client:  true,
+func ClientLang(workspace *core.Workspace) *LangHandler {
+	return &LangHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/texts/**/*.lang"),
+		Client:    true,
+	}
 }
 
-var Lang = &LangHandler{
-	Pattern: shared.LangGlob,
+func Lang(workspace *core.Workspace) *LangHandler {
+	return &LangHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/texts/**/*.lang"),
+	}
 }

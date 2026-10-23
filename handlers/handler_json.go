@@ -7,26 +7,33 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/textdocument"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 const defaultScope = "__default__"
 
 type JsonContext struct {
-	URI           protocol.DocumentURI
+	URI           uri.URI
 	NodeValue     string
 	GetPath       func() jsonc.Path
 	GetParentNode func() *jsonc.Node
 	GetRootNode   func() *jsonc.Node
 }
 
+type BindingKind uint8
+
+const (
+	Definition BindingKind = iota
+	References
+)
+
 type JsonEntry struct {
-	Store         *stores.SymbolStore
-	Path          []shared.JsonPath
+	Kind          BindingKind
+	Binding       *core.SymbolBinding
+	Path          []core.JsonPath
 	Matcher       func(ctx *JsonContext) bool
 	Transform     func(value string) string
 	DisableRename bool
@@ -34,18 +41,59 @@ type JsonEntry struct {
 	FilterDiff bool
 	// Function to set the scope key. If omitted will use the `defaultScope` value
 	ScopeKey func(ctx *JsonContext) string
-	// Source for completions and definitions
-	Source func(ctx *JsonContext) []core.Symbol
-	// References that uses the same source
-	References func(ctx *JsonContext) []core.Symbol
+	// Overrides the default Definition method
+	DefinitionOverride func(ctx *JsonContext) []core.Symbol
+	// Overrides the default References method
+	ReferencesOverride func(ctx *JsonContext) []core.Symbol
+}
+
+func (e *JsonEntry) store() *core.SymbolStore {
+	if e.Binding == nil {
+		return nil
+	}
+	switch e.Kind {
+	case Definition:
+		return e.Binding.Definition
+	case References:
+		return e.Binding.References
+	default:
+		return nil
+	}
+}
+
+func (e *JsonEntry) hasSymbols() bool {
+	return e.Binding != nil || e.DefinitionOverride != nil || e.ReferencesOverride != nil
+}
+
+// Definition returns the declarations. Defaults to Binding.Definition.
+func (e *JsonEntry) Definition(ctx *JsonContext) []core.Symbol {
+	if e.DefinitionOverride != nil {
+		return e.DefinitionOverride(ctx)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	return e.Binding.Definition.Get()
+}
+
+// References returns the usages. Defaults to Binding.References.
+func (e *JsonEntry) References(ctx *JsonContext) []core.Symbol {
+	if e.ReferencesOverride != nil {
+		return e.ReferencesOverride(ctx)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	return e.Binding.References.Get()
 }
 
 type JsonHandler struct {
-	Pattern                 shared.Pattern
-	PathStore               *stores.PathStore
+	Workspace               *core.Workspace
+	Pattern                 core.Pattern
+	PathStore               *core.PathStore
 	Entries                 []JsonEntry
-	MolangLocations         []shared.JsonPath
-	MolangSemanticLocations []shared.JsonPath
+	MolangLocations         []core.JsonPath
+	MolangSemanticLocations []core.JsonPath
 	CommandEntry            JsonCommandEntry
 }
 
@@ -72,20 +120,24 @@ func (m SlashMode) matches(value string) bool {
 }
 
 type JsonCommandEntry struct {
-	Path      []shared.JsonPath
+	Path      []core.JsonPath
 	SlashMode SlashMode
 	Handler   *CommandHandler
 }
 
-func (j *JsonHandler) GetPattern() shared.Pattern {
+func (j *JsonHandler) molang() *MolangHandler {
+	return &MolangHandler{Workspace: j.Workspace}
+}
+
+func (j *JsonHandler) GetPattern() core.Pattern {
 	return j.Pattern
 }
 
-func (j *JsonHandler) Parse(uri protocol.DocumentURI) error {
+func (j *JsonHandler) Parse(uri uri.URI) error {
 	if j.PathStore != nil {
-		j.PathStore.Insert(j.Pattern, uri)
+		j.PathStore.Insert(j.Workspace, j.Pattern, uri)
 	}
-	document, err := textdocument.GetOrReadFile(uri)
+	document, err := j.Workspace.Documents.GetOrReadFile(uri)
 	if err != nil {
 		return err
 	}
@@ -114,7 +166,8 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 	}
 
 	for _, entry := range j.Entries {
-		if entry.Store == nil {
+		store := entry.store()
+		if store == nil {
 			continue
 		}
 		for _, jsonPath := range entry.Path {
@@ -147,7 +200,7 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 				if entry.ScopeKey != nil {
 					scope = entry.ScopeKey(&ctx)
 				}
-				entry.Store.Insert(scope, core.Symbol{
+				store.Insert(scope, core.Symbol{
 					Value: nodeValue,
 					URI:   document.URI,
 					Range: &protocol.Range{
@@ -161,13 +214,13 @@ func (j *JsonHandler) ParseDocument(document *textdocument.TextDocument) error {
 	return nil
 }
 
-func (j *JsonHandler) Delete(uri protocol.DocumentURI) {
+func (j *JsonHandler) Delete(uri uri.URI) {
 	if j.CommandEntry.Handler != nil {
 		j.CommandEntry.Handler.Delete(uri)
 	}
 	for _, entry := range j.Entries {
-		if entry.Store != nil {
-			entry.Store.Delete(uri)
+		if store := entry.store(); store != nil {
+			store.Delete(uri)
 		}
 	}
 }
@@ -284,24 +337,29 @@ func (j *JsonHandler) Completions(document *textdocument.TextDocument, position 
 		}
 		if isInside(docRange, position) {
 			doc := document.CreateVirtualDocument(docRange)
-			res = Molang.Completions(doc, position)
+			res = j.molang().Completions(doc, position)
 		}
 	}
 	entry, ctx := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil {
+	if entry == nil {
 		return res
 	}
 
+	// Declarations complete from usages, usages complete from declarations
+	source, refs := entry.Definition, entry.References
+	if entry.Kind == Definition {
+		source, refs = entry.References, entry.Definition
+	}
 	var items []core.Symbol
 	if entry.FilterDiff {
-		items = difference(j.Pattern, entry.Source(ctx), entry.References(ctx))
+		items = difference(j.Workspace, j.Pattern, source(ctx), refs(ctx))
 	} else {
-		items = entry.Source(ctx)
+		items = source(ctx)
 	}
 
 	set := mapset.NewThreadUnsafeSet[string]()
-	if entry.Store != nil && entry.Store.VanillaData != nil {
-		set = entry.Store.VanillaData.Clone()
+	if entry.Binding != nil && entry.Binding.VanillaData != nil {
+		set = entry.Binding.VanillaData.Clone()
 	}
 
 	for _, item := range items {
@@ -314,14 +372,12 @@ func (j *JsonHandler) Completions(document *textdocument.TextDocument, position 
 			Label: value,
 		}
 		if node != nil {
-			completion.TextEdit = &protocol.Or_CompletionItem_textEdit{
-				Value: protocol.TextEdit{
-					Range: protocol.Range{
-						Start: document.PositionAt(node.Offset),
-						End:   document.PositionAt(node.Offset + node.Length),
-					},
-					NewText: value,
+			completion.TextEdit = &protocol.TextEdit{
+				Range: protocol.Range{
+					Start: document.PositionAt(node.Offset),
+					End:   document.PositionAt(node.Offset + node.Length),
 				},
+				NewText: value,
 			}
 		}
 		res = append(res, completion)
@@ -351,10 +407,10 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 			Start: document.PositionAt(node.Offset + 1),
 			End:   document.PositionAt(node.Offset + node.Length - 1),
 		})
-		res = slices.Concat(res, Molang.Definitions(doc, position))
+		res = slices.Concat(res, j.molang().Definitions(doc, position))
 	}
 	entry, ctx := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil {
+	if entry == nil {
 		return res
 	}
 
@@ -366,7 +422,7 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 		nodeValue = entry.Transform(nodeValue)
 	}
 
-	for _, item := range entry.Source(ctx) {
+	for _, item := range entry.Definition(ctx) {
 		if item.Value != nodeValue {
 			continue
 		}
@@ -380,6 +436,62 @@ func (j *JsonHandler) Definitions(document *textdocument.TextDocument, position 
 		if item.Range != nil {
 			location.TargetRange = *item.Range
 			location.TargetSelectionRange = *item.Range
+		}
+		res = append(res, location)
+	}
+	return res
+}
+
+func (j *JsonHandler) References(document *textdocument.TextDocument, position protocol.Position, includeDeclaration bool) []protocol.Location {
+	offset := document.OffsetAt(position)
+	location := jsonc.GetLocation(document.GetText(), offset)
+	node := location.PreviousNode
+	if node == nil {
+		return nil
+	}
+
+	res := []protocol.Location{}
+	if entry := j.commandEntry(location); entry != nil {
+		docRange := protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		}
+		doc := document.CreateVirtualDocument(docRange)
+		res = entry.Handler.References(doc, position, includeDeclaration)
+	}
+	if j.isMolangLocation(location) {
+		doc := document.CreateVirtualDocument(protocol.Range{
+			Start: document.PositionAt(node.Offset + 1),
+			End:   document.PositionAt(node.Offset + node.Length - 1),
+		})
+		res = slices.Concat(res, j.molang().References(doc, position, includeDeclaration))
+	}
+	entry, ctx := j.prepareContext(document, location)
+	if entry == nil {
+		return res
+	}
+
+	nodeValue, ok := node.Value.(string)
+	if !ok {
+		return res
+	}
+	if entry.Transform != nil {
+		nodeValue = entry.Transform(nodeValue)
+	}
+
+	symbols := entry.References(ctx)
+	if includeDeclaration {
+		symbols = slices.Concat(entry.Definition(ctx), symbols)
+	}
+	for _, item := range symbols {
+		if item.Value != nodeValue {
+			continue
+		}
+		location := protocol.Location{
+			URI: item.URI,
+		}
+		if item.Range != nil {
+			location.Range = *item.Range
 		}
 		res = append(res, location)
 	}
@@ -404,7 +516,7 @@ func (j *JsonHandler) PrepareRename(document *textdocument.TextDocument, positio
 	}
 
 	entry, _ := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil || entry.DisableRename {
+	if entry == nil || !entry.hasSymbols() || entry.DisableRename {
 		return nil
 	}
 	// TODO: Support renaming entry that uses transform
@@ -441,12 +553,12 @@ func (j *JsonHandler) Rename(document *textdocument.TextDocument, position proto
 	}
 
 	entry, ctx := j.prepareContext(document, location)
-	if entry == nil || entry.Source == nil || entry.References == nil || entry.DisableRename {
+	if entry == nil || entry.DisableRename {
 		return nil
 	}
 
-	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
-	for _, item := range slices.Concat(entry.Source(ctx), entry.References(ctx)) {
+	changes := make(map[uri.URI][]protocol.TextEdit)
+	for _, item := range slices.Concat(entry.Definition(ctx), entry.References(ctx)) {
 		if item.Value != node.Value {
 			continue
 		}
@@ -477,7 +589,7 @@ func (j *JsonHandler) Hover(document *textdocument.TextDocument, position protoc
 			End:   document.PositionAt(node.Offset + node.Length - 1),
 		}
 		doc := document.CreateVirtualDocument(docRange)
-		return Molang.Hover(doc, position)
+		return j.molang().Hover(doc, position)
 	}
 	return nil
 }
@@ -500,7 +612,7 @@ func (j *JsonHandler) SignatureHelp(document *textdocument.TextDocument, positio
 			End:   document.PositionAt(node.Offset + node.Length - 1),
 		}
 		doc := document.CreateVirtualDocument(docRange)
-		return Molang.SignatureHelp(doc, position)
+		return j.molang().SignatureHelp(doc, position)
 	}
 	return nil
 }
@@ -544,7 +656,7 @@ func (j *JsonHandler) SemanticTokens(document *textdocument.TextDocument) *proto
 		},
 	}, nil)
 	molangDocument := document.CreateVirtualDocument(molangRanges...)
-	tokens = append(tokens, Molang.ComputeSemanticTokens(molangDocument)...)
+	tokens = append(tokens, j.molang().ComputeSemanticTokens(molangDocument)...)
 
 	return &protocol.SemanticTokens{
 		Data: semtok.Encode(tokens, tokenType, tokenModifier),

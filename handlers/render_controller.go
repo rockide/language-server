@@ -2,38 +2,34 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var RenderController = &JsonHandler{
-	Pattern: shared.RenderControllerGlob,
-	Entries: []JsonEntry{
-		{
-			Store:      stores.RenderControllerId.Source,
-			Path:       []shared.JsonPath{shared.JsonKey("render_controllers/*")},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.RenderControllerId.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.RenderControllerId.Source.Get()
+func RenderController(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/render_controllers/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.RenderControllerId,
+				Path:       []core.JsonPath{core.JsonKey("render_controllers/*")},
+				FilterDiff: true,
 			},
 		},
-	},
-	MolangLocations: []shared.JsonPath{
-		shared.JsonValue("render_controllers/*/uv_anim/offset/*"),
-		shared.JsonValue("render_controllers/*/uv_anim/scale/*"),
-		shared.JsonValue("render_controllers/*/geometry"),
-		shared.JsonValue("render_controllers/*/part_visibility/*/*"),
-		shared.JsonValue("render_controllers/*/materials/*/*"),
-		shared.JsonValue("render_controllers/*/textures/*"),
-		shared.JsonValue("render_controllers/*/color/*"),
-		shared.JsonValue("render_controllers/*/overlay_color/*"),
-		shared.JsonValue("render_controllers/*/is_hurt_color/*"),
-		shared.JsonValue("render_controllers/*/on_fire_color/*"),
-	},
-	MolangSemanticLocations: []shared.JsonPath{
-		shared.JsonValue("render_controllers/*/arrays/*/*/*"),
-	},
+		MolangLocations: []core.JsonPath{
+			core.JsonValue("render_controllers/*/uv_anim/offset/*"),
+			core.JsonValue("render_controllers/*/uv_anim/scale/*"),
+			core.JsonValue("render_controllers/*/geometry"),
+			core.JsonValue("render_controllers/*/part_visibility/*/*"),
+			core.JsonValue("render_controllers/*/materials/*/*"),
+			core.JsonValue("render_controllers/*/textures/*"),
+			core.JsonValue("render_controllers/*/color/*"),
+			core.JsonValue("render_controllers/*/overlay_color/*"),
+			core.JsonValue("render_controllers/*/is_hurt_color/*"),
+			core.JsonValue("render_controllers/*/on_fire_color/*"),
+		},
+		MolangSemanticLocations: []core.JsonPath{
+			core.JsonValue("render_controllers/*/arrays/*/*/*"),
+		},
+	}
 }

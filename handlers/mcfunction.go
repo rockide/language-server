@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/mcfunction"
 	"github.com/rockide/language-server/internal/mcfunction/builtin"
-	"github.com/rockide/language-server/shared"
 )
 
 func newCommandParser(options mcfunction.ParserOptions) *mcfunction.Parser {
@@ -12,7 +12,6 @@ func newCommandParser(options mcfunction.ParserOptions) *mcfunction.Parser {
 
 var defaultCommandParser = newCommandParser(mcfunction.ParserOptions{})
 
-var McFunction = &CommandHandler{
-	Pattern: shared.FunctionGlob,
-	Parser:  defaultCommandParser,
+func McFunction(workspace *core.Workspace) *CommandHandler {
+	return newCommandHandler(workspace, core.BehaviorPattern("/functions/**/*.mcfunction"), defaultCommandParser)
 }

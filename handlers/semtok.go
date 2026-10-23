@@ -2,18 +2,21 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/internal/molang"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 )
 
 var tokenType = map[semtok.Type]bool{
-	semtok.TokNumber:                   true,
-	semtok.TokString:                   true,
-	semtok.TokMacro:                    true,
-	semtok.TokMethod:                   true,
-	semtok.TokType:                     true,
-	semtok.TokKeyword:                  true,
-	semtok.TokOperator:                 true,
+	semtok.TokNamespace:                true,
 	semtok.TokEnumMember:               true,
+	semtok.TokType:                     true,
+	semtok.TokVariable:                 true,
+	semtok.TokMethod:                   true,
+	semtok.TokMacro:                    true,
+	semtok.TokKeyword:                  true,
+	semtok.TokComment:                  true,
+	semtok.TokString:                   true,
+	semtok.TokNumber:                   true,
+	semtok.TokOperator:                 true,
 	semtok.TokColorDefault:             true,
 	semtok.TokColorGreen:               true,
 	semtok.TokColorAqua:                true,

@@ -4,50 +4,44 @@ import (
 	"strings"
 
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var EntityMaterial = &JsonHandler{
-	Pattern: shared.EntityMaterialGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.EntityMaterial.Source,
-			Path:  []shared.JsonPath{shared.JsonKey("materials/*")},
-			Transform: func(value string) string {
-				res, _, _ := strings.Cut(value, ":")
-				return res
+func EntityMaterial(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/materials/entity.material"),
+		Entries: []JsonEntry{
+			{
+				Kind:    Definition,
+				Binding: workspace.EntityMaterial,
+				Path:    []core.JsonPath{core.JsonKey("materials/*")},
+				Transform: func(value string) string {
+					res, _, _ := strings.Cut(value, ":")
+					return res
+				},
+				FilterDiff: true,
 			},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityMaterial.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityMaterial.Source.Get()
-			},
+			// TODO: Add base entity materials for inheritance.
 		},
-		// TODO: Add base entity materials for inheritance.
-	},
+	}
 }
 
-var ParticleMaterial = &JsonHandler{
-	Pattern: shared.ParticleMaterialGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.ParticleMaterial.Source,
-			Path:  []shared.JsonPath{shared.JsonKey("materials/*")},
-			Transform: func(value string) string {
-				res, _, _ := strings.Cut(value, ":")
-				return res
+func ParticleMaterial(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/materials/particles.material"),
+		Entries: []JsonEntry{
+			{
+				Kind:    Definition,
+				Binding: workspace.ParticleMaterial,
+				Path:    []core.JsonPath{core.JsonKey("materials/*")},
+				Transform: func(value string) string {
+					res, _, _ := strings.Cut(value, ":")
+					return res
+				},
+				FilterDiff: true,
 			},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleMaterial.References.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ParticleMaterial.Source.Get()
-			},
+			// TODO: Add base particle materials for inheritance.
 		},
-		// TODO: Add base particle materials for inheritance.
-	},
+	}
 }

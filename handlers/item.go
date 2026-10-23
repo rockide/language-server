@@ -6,146 +6,127 @@ import (
 
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 	"golang.org/x/mod/semver"
 )
 
-var Item = &JsonHandler{
-	Pattern: shared.ItemGlob,
-	Entries: []JsonEntry{
-		{
-			Store:      stores.ItemId.Source,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:item/description/identifier")},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get()
+func Item(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/items/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.ItemId,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:item/description/identifier")},
+				FilterDiff: true,
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get()
+			{
+				Kind:    References,
+				Binding: workspace.ItemTextureId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:item/components/minecraft:icon"),
+					core.JsonValue("minecraft:item/components/minecraft:icon/texture"),
+					core.JsonValue("minecraft:item/components/minecraft:icon/textures/*"),
+				},
 			},
-		},
-		{
-			Store: stores.ItemTextureId.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:item/components/minecraft:icon"),
-				shared.JsonValue("minecraft:item/components/minecraft:icon/texture"),
-				shared.JsonValue("minecraft:item/components/minecraft:icon/textures/*"),
+			{
+				Kind:    Definition,
+				Binding: workspace.ItemTag,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:item/components/minecraft:tags/tags/*")},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return slices.Concat(workspace.ItemTag.Definition.Get(), workspace.ItemTag.References.Get())
+				},
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTextureId.Source.Get()
+			{
+				Kind:    References,
+				Binding: workspace.ItemId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:item/components/minecraft:repairable/repair_items/*/items/*")},
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTextureId.References.Get()
+			{
+				Kind:    References,
+				Binding: workspace.ItemId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:item/components/minecraft:block_placer/block"),
+					core.JsonValue("minecraft:item/components/minecraft:digger/destroy_speeds/*/block"),
+				},
+				ScopeKey: func(ctx *JsonContext) string {
+					return "block"
+				},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ItemId.Definition.Get("block")
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ItemId.References.Get("block")
+				},
 			},
-		},
-		{
-			Store: stores.ItemTag.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:tags/tags/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.ItemTag.Source.Get(), stores.ItemTag.References.Get())
+			{
+				Kind:    References,
+				Binding: workspace.EntityId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:item/components/minecraft:entity_placer/entity")},
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
+			{
+				Kind:    Definition,
+				Binding: workspace.CooldownCategory,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:item/components/minecraft:cooldown/category")},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return slices.Concat(workspace.CooldownCategory.Definition.Get(), workspace.CooldownCategory.References.Get())
+				},
 			},
-		},
-		{
-			Store: stores.ItemId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:repairable/repair_items/*/items/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get()
+			{
+				Kind:    Definition,
+				Binding: workspace.ItemCustomComponent,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:item/components/minecraft:custom_components/*")},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return slices.Concat(workspace.ItemCustomComponent.Definition.Get(), workspace.ItemCustomComponent.References.Get())
+				},
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get()
-			},
-		},
-		{
-			Store: stores.ItemId.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:item/components/minecraft:block_placer/block"),
-				shared.JsonValue("minecraft:item/components/minecraft:digger/destroy_speeds/*/block"),
-			},
-			ScopeKey: func(ctx *JsonContext) string {
-				return "block"
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get("block")
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get("block")
-			},
-		},
-		{
-			Store: stores.EntityId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:entity_placer/entity")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.References.Get()
-			},
-		},
-		{
-			Store: stores.CooldownCategory.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:cooldown/category")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.CooldownCategory.Source.Get(), stores.CooldownCategory.References.Get())
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
-			},
-		},
-		{
-			Store: stores.ItemCustomComponent.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:item/components/minecraft:custom_components/*")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.ItemCustomComponent.Source.Get(), stores.ItemCustomComponent.References.Get())
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
-			},
-		},
-		{
-			Store: stores.ItemCustomComponent.Source,
-			Path:  []shared.JsonPath{shared.JsonKey("minecraft:item/components/*")},
-			Matcher: func(ctx *JsonContext) bool {
-				root := ctx.GetRootNode()
-				formatNode := jsonc.FindNodeAtLocation(root, jsonc.Path{"format_version"})
-				if formatNode != nil {
-					if version, ok := formatNode.Value.(string); ok {
-						match := !strings.HasPrefix(ctx.NodeValue, "minecraft:")
-						return semver.Compare("v"+version, "v1.21.80") > 0 && match
+			{
+				Kind:    Definition,
+				Binding: workspace.ItemCustomComponent,
+				Path:    []core.JsonPath{core.JsonKey("minecraft:item/components/*")},
+				Matcher: func(ctx *JsonContext) bool {
+					root := ctx.GetRootNode()
+					formatNode := jsonc.FindNodeAtLocation(root, jsonc.Path{"format_version"})
+					if formatNode != nil {
+						if version, ok := formatNode.Value.(string); ok {
+							match := !strings.HasPrefix(ctx.NodeValue, "minecraft:")
+							return semver.Compare("v"+version, "v1.21.80") > 0 && match
+						}
 					}
-				}
-				return false
+					return false
+				},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return slices.Concat(workspace.ItemCustomComponent.Definition.Get(), workspace.ItemCustomComponent.References.Get())
+				},
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return slices.Concat(stores.ItemCustomComponent.Source.Get(), stores.ItemCustomComponent.References.Get())
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
-			},
-		},
-		{
-			Store: stores.Lang.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:item/components/minecraft:display_name"),
-				shared.JsonValue("minecraft:item/components/minecraft:display_name/value"),
-				shared.JsonValue("minecraft:item/components/minecraft:interact_button"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lang.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.Lang.References.Get()
+			{
+				Kind:    References,
+				Binding: workspace.Lang,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:item/components/minecraft:display_name"),
+					core.JsonValue("minecraft:item/components/minecraft:display_name/value"),
+					core.JsonValue("minecraft:item/components/minecraft:interact_button"),
+				},
 			},
 		},
-	},
-	MolangLocations: []shared.JsonPath{
-		shared.JsonValue("minecraft:item/components/**/condition"),
-		shared.JsonValue("minecraft:item/components/minecraft:digger/destroy_speeds/*/block/tags"),
-		shared.JsonValue("minecraft:item/components/minecraft:repairable/repair_items/*/repair_amount"),
-		shared.JsonValue("minecraft:item/components/minecraft:icon/frame"),
-		shared.JsonValue("minecraft:item/events/**/sequence/*/condition"),
-	},
+		MolangLocations: []core.JsonPath{
+			core.JsonValue("minecraft:item/components/**/condition"),
+			core.JsonValue("minecraft:item/components/minecraft:digger/destroy_speeds/*/block/tags"),
+			core.JsonValue("minecraft:item/components/minecraft:repairable/repair_items/*/repair_amount"),
+			core.JsonValue("minecraft:item/components/minecraft:icon/frame"),
+			core.JsonValue("minecraft:item/events/**/sequence/*/condition"),
+		},
+	}
 }

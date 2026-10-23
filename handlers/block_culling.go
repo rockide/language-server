@@ -5,51 +5,46 @@ import (
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
 	"github.com/rockide/language-server/internal/sliceutil"
-	"github.com/rockide/language-server/internal/textdocument"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var BlockCulling = &JsonHandler{
-	Pattern: shared.BlockCullingGlob,
-	Entries: []JsonEntry{
-		{
-			Store:      stores.BlockCullingId.Source,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:block_culling_rules/description/identifier")},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockCullingId.References.Get()
+func BlockCulling(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/block_culling/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.BlockCullingId,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:block_culling_rules/description/identifier")},
+				FilterDiff: true,
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.BlockCullingId.Source.Get()
-			},
-		},
-		{
-			Path:          []shared.JsonPath{shared.JsonValue("minecraft:block_culling_rules/rules/*/geometry_part/bone")},
-			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				geos := _bcGeoIdentifiers(ctx)
-				if geos == nil {
-					return nil
-				}
-				return sliceutil.FlatMap(geos, func(identifier string) []core.Symbol {
-					return stores.GeometryBone.Source.Get(identifier)
-				})
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				geos := _bcGeoIdentifiers(ctx)
-				if geos == nil {
-					return nil
-				}
-				return sliceutil.FlatMap(geos, func(identifier string) []core.Symbol {
-					return stores.GeometryBone.References.Get(identifier)
-				})
+			{
+				Path:          []core.JsonPath{core.JsonValue("minecraft:block_culling_rules/rules/*/geometry_part/bone")},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					geos := _bcGeoIdentifiers(ctx, workspace)
+					if geos == nil {
+						return nil
+					}
+					return sliceutil.FlatMap(geos, func(identifier string) []core.Symbol {
+						return workspace.GeometryBone.Definition.Get(identifier)
+					})
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					geos := _bcGeoIdentifiers(ctx, workspace)
+					if geos == nil {
+						return nil
+					}
+					return sliceutil.FlatMap(geos, func(identifier string) []core.Symbol {
+						return workspace.GeometryBone.References.Get(identifier)
+					})
+				},
 			},
 		},
-	},
+	}
 }
 
-func _bcGeoIdentifiers(ctx *JsonContext) []string {
+func _bcGeoIdentifiers(ctx *JsonContext, workspace *core.Workspace) []string {
 	// Get culilng rule identifier
 	root := ctx.GetRootNode()
 	identifierNode := jsonc.FindNodeAtLocation(root, jsonc.Path{"minecraft:block_culling_rules", "description", "identifier"})
@@ -60,8 +55,8 @@ func _bcGeoIdentifiers(ctx *JsonContext) []string {
 	// Find geometries using the culling rules
 	var identifiers []string
 	set := mapset.NewThreadUnsafeSet[string]()
-	for _, ref := range stores.BlockCullingId.References.Get() {
-		document, err := textdocument.GetOrReadFile(ref.URI)
+	for _, ref := range workspace.BlockCullingId.References.Get() {
+		document, err := workspace.Documents.GetOrReadFile(ref.URI)
 		if err != nil {
 			continue
 		}

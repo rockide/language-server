@@ -8,28 +8,42 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/mcfunction"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/internal/protocol/semtok"
+	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/sliceutil"
 	"github.com/rockide/language-server/internal/textdocument"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 type CommandHandler struct {
-	Pattern shared.Pattern
-	Parser  *mcfunction.Parser
+	Workspace  *core.Workspace
+	Pattern    core.Pattern
+	Parser     *mcfunction.Parser
+	entries    map[string]commandEntry
+	rawMessage *JsonRawMessageHandler
+	itemNbt    *JsonSnippetHandler
 }
 
-func (h *CommandHandler) GetPattern() shared.Pattern {
+func newCommandHandler(workspace *core.Workspace, pattern core.Pattern, parser *mcfunction.Parser) *CommandHandler {
+	h := &CommandHandler{Workspace: workspace, Pattern: pattern, Parser: parser, entries: newCommandEntries(workspace)}
+	h.rawMessage = newRawMessage(workspace, h)
+	h.itemNbt = newItemNbt(workspace)
+	return h
+}
+
+func (h *CommandHandler) molang() *MolangHandler {
+	return &MolangHandler{Workspace: h.Workspace}
+}
+
+func (h *CommandHandler) GetPattern() core.Pattern {
 	return h.Pattern
 }
 
-func (h *CommandHandler) Parse(uri protocol.DocumentURI) error {
-	if strings.HasSuffix(uri.Path(), ".mcfunction") {
-		stores.McFunctionPath.Insert(h.Pattern, uri)
+func (h *CommandHandler) Parse(uri uri.URI) error {
+	if strings.HasSuffix(uri.FsPath(), ".mcfunction") {
+		h.Workspace.McFunctionPath.Insert(h.Workspace, h.Pattern, uri)
 	}
-	document, err := textdocument.GetOrReadFile(uri)
+	document, err := h.Workspace.Documents.GetOrReadFile(uri)
 	if err != nil {
 		return err
 	}
@@ -49,8 +63,12 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 			return true
 		}
 		for _, tag := range paramSpec.Tags {
-			entry, ok := commandEntries[tag]
-			if !ok || entry.Store == nil {
+			entry, ok := h.entries[tag]
+			if !ok {
+				continue
+			}
+			store := entry.store()
+			if store == nil {
 				continue
 			}
 			scope := defaultScope
@@ -62,7 +80,7 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 			if h.Parser.EscapeQuotes() {
 				nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 			}
-			entry.Store.Insert(scope, core.Symbol{
+			store.Insert(scope, core.Symbol{
 				URI:   document.URI,
 				Value: nodeValue,
 				Range: &protocol.Range{
@@ -76,13 +94,13 @@ func (h *CommandHandler) ParseDocument(document *textdocument.TextDocument) erro
 	return nil
 }
 
-func (h *CommandHandler) Delete(uri protocol.DocumentURI) {
-	if strings.HasSuffix(uri.Path(), ".mcfunction") {
-		stores.McFunctionPath.Delete(uri)
+func (h *CommandHandler) Delete(uri uri.URI) {
+	if strings.HasSuffix(uri.FsPath(), ".mcfunction") {
+		h.Workspace.McFunctionPath.Delete(uri)
 	}
-	for _, entry := range commandEntries {
-		if entry.Store != nil {
-			entry.Store.Delete(uri)
+	for _, entry := range h.entries {
+		if store := entry.store(); store != nil {
+			store.Delete(uri)
 		}
 	}
 }
@@ -122,11 +140,10 @@ func (h *CommandHandler) Completions(document *textdocument.TextDocument, positi
 				return h.mapCompletions(arg, cursorRange, nodeRange)
 			case mcfunction.ParameterKindRawMessage:
 				doc := document.CreateVirtualDocument(nodeRange)
-				rawMessage.CommandHandler = h
-				return rawMessage.Completions(doc, position)
+				return h.rawMessage.Completions(doc, position)
 			case mcfunction.ParameterKindItemNbt:
 				doc := document.CreateVirtualDocument(nodeRange)
-				return itemNbt.Completions(doc, position)
+				return h.itemNbt.Completions(doc, position)
 			}
 		}
 		invalid := node.Parent().Kind() == mcfunction.NodeKindInvalidCommand
@@ -161,13 +178,11 @@ func (h *CommandHandler) commandCompletions(editRange protocol.Range, prefix str
 		value := prefix + name
 		result = append(result, protocol.CompletionItem{
 			Label:  value,
-			Detail: spec.Description,
-			Kind:   protocol.MethodCompletion,
-			TextEdit: &protocol.Or_CompletionItem_textEdit{
-				Value: protocol.TextEdit{
-					NewText: value,
-					Range:   editRange,
-				},
+			Detail: protocol.NewOptional(spec.Description),
+			Kind:   protocol.CompletionItemKindMethod,
+			TextEdit: &protocol.TextEdit{
+				NewText: value,
+				Range:   editRange,
 			},
 		})
 	}
@@ -202,11 +217,9 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 		result = append(result, protocol.CompletionItem{
 			Label: label,
 			Kind:  k,
-			TextEdit: &protocol.Or_CompletionItem_textEdit{
-				Value: protocol.TextEdit{
-					NewText: value,
-					Range:   editRange,
-				},
+			TextEdit: &protocol.TextEdit{
+				NewText: value,
+				Range:   editRange,
 			},
 		})
 	}
@@ -214,7 +227,7 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 	paramCompletions = func(param *mcfunction.ParameterSpec) {
 		if len(param.Literals) > 0 {
 			for _, lit := range param.Literals {
-				addItem(escape(lit), protocol.KeywordCompletion)
+				addItem(escape(lit), protocol.CompletionItemKindKeyword)
 			}
 		}
 		switch param.Kind {
@@ -223,8 +236,8 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 		case mcfunction.ParameterKindInteger:
 			addItem("0")
 		case mcfunction.ParameterKindBoolean:
-			addItem("true", protocol.KeywordCompletion)
-			addItem("false", protocol.KeywordCompletion)
+			addItem("true", protocol.CompletionItemKindKeyword)
+			addItem("false", protocol.CompletionItemKindKeyword)
 		case mcfunction.ParameterKindSelector:
 			for sel, ok := range h.Parser.GetSelectors() {
 				if ok {
@@ -234,16 +247,16 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 		case mcfunction.ParameterKindMap:
 			result = append(result, protocol.CompletionItem{
 				Label:            "[]",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       "[$1=$0]",
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional("[$1=$0]"),
 			})
 		case mcfunction.ParameterKindMapJSON, mcfunction.ParameterKindJSON:
 			result = append(result, protocol.CompletionItem{
 				Label:            "{}",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       "{$0}",
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional("{$0}"),
 			})
 		case mcfunction.ParameterKindVector2:
 			addItem("~~")
@@ -271,21 +284,21 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 			}
 		case mcfunction.ParameterKindCommand:
 			for name := range h.Parser.RegisteredCommands() {
-				addItem(name, protocol.MethodCompletion)
+				addItem(name, protocol.CompletionItemKindMethod)
 			}
 		case mcfunction.ParameterKindRawMessage:
 			result = append(result, protocol.CompletionItem{
 				Label:            "Raw Message Snippet...",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       escape(`{"rawtext":[$0]}`),
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional(escape(`{"rawtext":[$0]}`)),
 			})
 		case mcfunction.ParameterKindItemNbt:
 			result = append(result, protocol.CompletionItem{
 				Label:            "Item NBT Snippet...",
-				Kind:             protocol.SnippetCompletion,
-				InsertTextFormat: &snippetTextFormat,
-				InsertText:       escape(`{$0}`),
+				Kind:             protocol.CompletionItemKindSnippet,
+				InsertTextFormat: protocol.InsertTextFormatSnippet,
+				InsertText:       protocol.NewOptional(escape(`{$0}`)),
 			})
 		case mcfunction.ParameterKindRelativeNumber:
 			addItem("~")
@@ -299,23 +312,27 @@ func (h *CommandHandler) innerCompletions(node mcfunction.CommandNode, paramSpec
 				continue
 			}
 			tagSet.Add(tag)
-			entry, ok := commandEntries[tag]
-			if !ok || entry.Source == nil {
+			entry, ok := h.entries[tag]
+			if !ok {
 				continue
 			}
-			for _, item := range entry.Source(node) {
+			candidates := entry.Definition
+			if entry.Kind == Definition {
+				candidates = entry.References
+			}
+			for _, item := range candidates(node) {
 				value := item.Value
 				if entry.Transform != nil {
 					value = entry.Transform(value)
 				}
 				addItem(escape(value))
 			}
-			if entry.Store != nil && entry.Store.VanillaData != nil {
-				for value := range mapset.Elements(entry.Store.VanillaData) {
+			if entry.Binding != nil && entry.Binding.VanillaData != nil {
+				for value := range mapset.Elements(entry.Binding.VanillaData) {
 					if entry.Namespaced && !strings.HasPrefix(value, "minecraft:") {
 						continue
 					}
-					addItem(escape(value), protocol.EnumCompletion)
+					addItem(escape(value), protocol.CompletionItemKindEnum)
 				}
 			}
 		}
@@ -354,12 +371,10 @@ func (h *CommandHandler) mapCompletions(node mcfunction.ArgNode, cursorRange pro
 		for _, key := range keys {
 			result = append(result, protocol.CompletionItem{
 				Label: key,
-				Kind:  protocol.FieldCompletion,
-				TextEdit: &protocol.Or_CompletionItem_textEdit{
-					Value: protocol.TextEdit{
-						NewText: key,
-						Range:   editRange,
-					},
+				Kind:  protocol.CompletionItemKindField,
+				TextEdit: &protocol.TextEdit{
+					NewText: key,
+					Range:   editRange,
 				},
 			})
 		}
@@ -423,11 +438,11 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 		nodeValue = strings.Trim(nodeValue, `"`)
 	}
 	for _, tag := range paramSpec.Tags {
-		entry, ok := commandEntries[tag]
-		if !ok || entry.Source == nil {
+		entry, ok := h.entries[tag]
+		if !ok {
 			continue
 		}
-		for _, item := range entry.Source(node) {
+		for _, item := range entry.Definition(node) {
 			value := item.Value
 			if entry.Transform != nil {
 				value = entry.Transform(value)
@@ -442,6 +457,59 @@ func (h *CommandHandler) Definitions(document *textdocument.TextDocument, positi
 			if item.Range != nil {
 				location.TargetRange = *item.Range
 				location.TargetSelectionRange = *item.Range
+			}
+			result = append(result, location)
+		}
+	}
+	return result
+}
+
+func (h *CommandHandler) References(document *textdocument.TextDocument, position protocol.Position, includeDeclaration bool) []protocol.Location {
+	result := []protocol.Location{}
+	parsed := h.parseLine(document, position)
+	root := parsed.Root
+	rOffset := parsed.RelativeOffset
+	line := parsed.Content
+	if root == nil {
+		return nil
+	}
+	node := mcfunction.NodeAt(root, rOffset)
+	nodeSpec, ok := node.(mcfunction.ParamNode)
+	if !ok {
+		return result
+	}
+	paramSpec, ok := nodeSpec.ParamSpec()
+	if !ok {
+		return result
+	}
+	nodeValue := node.Text(line)
+	if h.Parser.EscapeQuotes() {
+		nodeValue = strings.Trim(nodeValue, `\"`)
+	} else {
+		nodeValue = strings.Trim(nodeValue, `"`)
+	}
+	for _, tag := range paramSpec.Tags {
+		entry, ok := h.entries[tag]
+		if !ok {
+			continue
+		}
+		symbols := entry.References(node)
+		if includeDeclaration {
+			symbols = slices.Concat(entry.Definition(node), symbols)
+		}
+		for _, item := range symbols {
+			value := item.Value
+			if entry.Transform != nil {
+				value = entry.Transform(value)
+			}
+			if value != nodeValue {
+				continue
+			}
+			location := protocol.Location{
+				URI: item.URI,
+			}
+			if item.Range != nil {
+				location.Range = *item.Range
 			}
 			result = append(result, location)
 		}
@@ -477,7 +545,7 @@ func (h *CommandHandler) PrepareRename(document *textdocument.TextDocument, posi
 		nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 	}
 	for _, tag := range paramSpec.Tags {
-		entry, ok := commandEntries[tag]
+		entry, ok := h.entries[tag]
 		if !ok || entry.DisableRename {
 			continue
 		}
@@ -510,22 +578,19 @@ func (h *CommandHandler) Rename(document *textdocument.TextDocument, position pr
 	if h.Parser.EscapeQuotes() {
 		nodeValue = strings.ReplaceAll(nodeValue, `\"`, `"`)
 	}
-	changes := make(map[protocol.DocumentURI][]protocol.TextEdit)
+	changes := make(map[uri.URI][]protocol.TextEdit)
 	for _, tag := range paramSpec.Tags {
-		entry, ok := commandEntries[tag]
+		entry, ok := h.entries[tag]
 		if !ok || entry.DisableRename {
 			continue
 		}
-		items := entry.Source(node)
-		if entry.References != nil {
-			items = slices.Concat(items, entry.References(node))
-		}
+		items := slices.Concat(entry.Definition(node), entry.References(node))
 		for _, item := range items {
 			if item.Value != nodeValue {
 				continue
 			}
 			var newText string
-			if strings.HasSuffix(item.URI.Path(), ".json") {
+			if strings.HasSuffix(item.URI.FsPath(), ".json") {
 				newText = strings.ReplaceAll(newName, `"`, `\"`)
 			} else {
 				newText = newName
@@ -565,8 +630,8 @@ func (h *CommandHandler) Hover(document *textdocument.TextDocument, position pro
 		return nil
 	}
 	return &protocol.Hover{
-		Contents: protocol.MarkupContent{
-			Kind: protocol.Markdown,
+		Contents: &protocol.MarkupContent{
+			Kind: protocol.MarkupKindMarkdown,
 			Value: "```\n" +
 				commandNode.CommandName() +
 				"\n```\n" +
@@ -616,16 +681,14 @@ func (h *CommandHandler) SignatureHelp(document *textdocument.TextDocument, posi
 			paramLabels[j] = p.ToString()
 		}
 		signatures = append(signatures, protocol.SignatureInformation{
-			Label: commandNode.CommandName() + " " + strings.Join(paramLabels, " "),
-			Documentation: &protocol.Or_SignatureInformation_documentation{
-				Value: spec.Description,
-			},
+			Label:         commandNode.CommandName() + " " + strings.Join(paramLabels, " "),
+			Documentation: protocol.String(spec.Description),
 			Parameters: sliceutil.Map(paramLabels, func(label string) protocol.ParameterInformation {
 				return protocol.ParameterInformation{
-					Label: label,
+					Label: protocol.String(label),
 				}
 			}),
-			ActiveParameter: index,
+			ActiveParameter: protocol.NewNullable(index),
 		})
 	}
 	return &protocol.SignatureHelp{
@@ -711,7 +774,7 @@ func (h *CommandHandler) ComputeSemanticTokens(document *textdocument.TextDocume
 		return true
 	})
 	molangDocument := document.CreateVirtualDocument(molangRanges...)
-	tokens = slices.Concat(tokens, Molang.ComputeSemanticTokens(molangDocument))
+	tokens = slices.Concat(tokens, h.molang().ComputeSemanticTokens(molangDocument))
 	return tokens
 }
 
@@ -767,359 +830,338 @@ var commandParamTokenMap = map[mcfunction.ParameterKind]semtok.Type{
 }
 
 type commandEntry struct {
-	Store         *stores.SymbolStore
-	Source        func(node mcfunction.Node) []core.Symbol
-	References    func(node mcfunction.Node) []core.Symbol
-	Transform     func(s string) string
-	Scope         func(node mcfunction.Node) string
-	Namespaced    bool
-	DisableRename bool
+	Kind    BindingKind
+	Binding *core.SymbolBinding
+	// Overrides the default Definition method
+	DefinitionOverride func(node mcfunction.Node) []core.Symbol
+	// Overrides the default References method
+	ReferencesOverride func(node mcfunction.Node) []core.Symbol
+	Transform          func(s string) string
+	Scope              func(node mcfunction.Node) string
+	Namespaced         bool
+	DisableRename      bool
 }
 
-var commandEntries = map[string]commandEntry{
-	mcfunction.TagAimAssistId: {
-		Store: stores.AimAssistCategory.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.AimAssistCategory.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.AimAssistCategory.References.Get()
-		},
-	},
-	mcfunction.TagBiomeId: {
-		Store: stores.BiomeId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.BiomeId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.BiomeId.References.Get()
-		},
-	},
-	mcfunction.TagBlockId: {
-		Store: stores.ItemId.References,
-		Scope: func(node mcfunction.Node) string {
-			return "block"
-		},
-		Namespaced: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ItemId.Source.Get("block")
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.ItemId.References.Get("block")
-		},
-	},
-	mcfunction.TagBlockState: {
-		Store: stores.BlockState.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.BlockState.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.BlockState.References.Get()
-		},
-	},
-	mcfunction.TagCameraId: {
-		Store: stores.CameraId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.CameraId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.CameraId.References.Get()
-		},
-	},
-	mcfunction.TagClientAnimationId: {
-		Store: stores.ClientAnimationId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ClientAnimationId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.ClientAnimationId.References.Get()
-		},
-	},
-	mcfunction.TagDialogueId: {
-		Store: stores.DialogueId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.DialogueId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.DialogueId.References.Get()
-		},
-	},
-	mcfunction.TagEntityEvent: {
-		DisableRename: true,
-		Store:         stores.EntityEvent.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityEvent.Source.Get()
-		},
-	},
-	mcfunction.TagEntityId: {
-		Store:      stores.EntityId.References,
-		Namespaced: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityId.References.Get()
-		},
-	},
-	mcfunction.TagFeatureId: {
-		Store: stores.FeatureId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureId.References.Get()
-		},
-	},
-	mcfunction.TagFeatureRuleId: {
-		Store: stores.FeatureRuleId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureRuleId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.FeatureRuleId.References.Get()
-		},
-	},
-	mcfunction.TagFogId: {
-		Store: stores.FogId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.FogId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.FogId.References.Get()
-		},
-	},
-	mcfunction.TagFunctionFile: {
-		DisableRename: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.McFunctionPath.Get()
-		},
-		Transform: func(s string) string {
-			return strings.TrimPrefix(s, "functions/")
-		},
-	},
-	mcfunction.TagItemId: {
-		Store:      stores.ItemId.References,
-		Namespaced: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ItemId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.ItemId.References.Get()
-		},
-	},
-	mcfunction.TagJigsawId: {
-		Store: stores.WorldgenJigsawId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenJigsawId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenJigsawId.References.Get()
-		},
-	},
-	mcfunction.TagJigsawTemplatePoolId: {
-		Store: stores.WorldgenTemplatePoolId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenTemplatePoolId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.WorldgenTemplatePoolId.References.Get()
-		},
-	},
-	mcfunction.TagLootTableFile: {
-		DisableRename: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.LootTablePath.Get()
-		},
-		Transform: func(s string) string {
-			s = strings.TrimPrefix(s, "loot_tables/")
-			s = strings.TrimSuffix(s, ".json")
-			return s
-		},
-	},
-	mcfunction.TagMusicId: {
-		Store: stores.MusicDefinitionId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.MusicDefinitionId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.MusicDefinitionId.References.Get()
-		},
-	},
-	mcfunction.TagProvidedFogId: {
-		Store: stores.ProvidedFogId.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ProvidedFogId.Source.Get()
-		},
-	},
-	mcfunction.TagRecipeId: {
-		Store: stores.RecipeId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.RecipeId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.RecipeId.References.Get()
-		},
-	},
-	mcfunction.TagSoundId: {
-		Store: stores.SoundDefinitionId.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.SoundDefinitionId.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.SoundDefinitionId.References.Get()
-		},
-	},
-	mcfunction.TagStructureFile: {
-		DisableRename: true,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.StructurePath.Get()
-		},
-	},
-	mcfunction.TagTagId: {
-		Store: stores.Tag.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.Tag.Source.Get()
-		},
-	},
-	mcfunction.TagTickingAreaId: {
-		Store: stores.TickingArea.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.TickingArea.Source.Get()
-		},
-	},
-	mcfunction.TagTypeFamilyId: {
-		Store: stores.EntityFamily.References,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityFamily.Source.Get()
-		},
-		References: func(node mcfunction.Node) []core.Symbol {
-			return stores.EntityFamily.References.Get()
-		},
-	},
-	mcfunction.TagScoreboardObjectiveId: {
-		Store: stores.ScoreboardObjective.Source,
-		Source: func(node mcfunction.Node) []core.Symbol {
-			return stores.ScoreboardObjective.Source.Get()
-		},
-	},
+func (e *commandEntry) store() *core.SymbolStore {
+	if e.Binding == nil {
+		return nil
+	}
+	switch e.Kind {
+	case Definition:
+		return e.Binding.Definition
+	case References:
+		return e.Binding.References
+	default:
+		return nil
+	}
 }
 
-var rawMessage = &JsonRawMessageHandler{
-	JsonSnippetHandler: &JsonSnippetHandler{
-		JsonHandler: &JsonHandler{
-			Entries: []JsonEntry{
-				{
-					Store: stores.Lang.References,
-					Path:  []shared.JsonPath{shared.JsonValue("rawtext/**/translate")},
-					Source: func(ctx *JsonContext) []core.Symbol {
-						return stores.Lang.Source.Get()
+// Definition returns the declarations. Defaults to Binding.Definition.
+func (e *commandEntry) Definition(node mcfunction.Node) []core.Symbol {
+	if e.DefinitionOverride != nil {
+		return e.DefinitionOverride(node)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	return e.Binding.Definition.Get()
+}
+
+// References returns the usages. Defaults to Binding.References.
+func (e *commandEntry) References(node mcfunction.Node) []core.Symbol {
+	if e.ReferencesOverride != nil {
+		return e.ReferencesOverride(node)
+	}
+	if e.Binding == nil {
+		return nil
+	}
+	return e.Binding.References.Get()
+}
+
+func newCommandEntries(workspace *core.Workspace) map[string]commandEntry {
+	return map[string]commandEntry{
+		mcfunction.TagAimAssistId: {
+			Kind:    References,
+			Binding: workspace.AimAssistCategory,
+		},
+		mcfunction.TagBiomeId: {
+			Kind:    References,
+			Binding: workspace.BiomeId,
+		},
+		mcfunction.TagBlockId: {
+			Kind:    References,
+			Binding: workspace.ItemId,
+			Scope: func(node mcfunction.Node) string {
+				return "block"
+			},
+			Namespaced: true,
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.ItemId.Definition.Get("block")
+			},
+			ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.ItemId.References.Get("block")
+			},
+		},
+		mcfunction.TagBlockState: {
+			Kind:    References,
+			Binding: workspace.BlockState,
+		},
+		mcfunction.TagCameraId: {
+			Kind:    References,
+			Binding: workspace.CameraId,
+		},
+		mcfunction.TagClientAnimationId: {
+			Kind:    References,
+			Binding: workspace.ClientAnimationId,
+		},
+		mcfunction.TagDialogueId: {
+			Kind:    References,
+			Binding: workspace.DialogueId,
+		},
+		mcfunction.TagEntityEvent: {
+			DisableRename: true,
+			Kind:          References,
+			Binding:       workspace.EntityEvent,
+		},
+		mcfunction.TagEntityId: {
+			Kind:       References,
+			Binding:    workspace.EntityId,
+			Namespaced: true,
+		},
+		mcfunction.TagFeatureId: {
+			Kind:    References,
+			Binding: workspace.FeatureId,
+		},
+		mcfunction.TagFeatureRuleId: {
+			Kind:    References,
+			Binding: workspace.FeatureRuleId,
+		},
+		mcfunction.TagFogId: {
+			Kind:    References,
+			Binding: workspace.FogId,
+		},
+		mcfunction.TagFunctionFile: {
+			DisableRename: true,
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.McFunctionPath.Get()
+			},
+			Transform: func(s string) string {
+				return strings.TrimPrefix(s, "functions/")
+			},
+		},
+		mcfunction.TagItemId: {
+			Kind:       References,
+			Binding:    workspace.ItemId,
+			Namespaced: true,
+		},
+		mcfunction.TagJigsawId: {
+			Kind:    References,
+			Binding: workspace.WorldgenJigsawId,
+		},
+		mcfunction.TagJigsawTemplatePoolId: {
+			Kind:    References,
+			Binding: workspace.WorldgenTemplatePoolId,
+		},
+		mcfunction.TagLootTableFile: {
+			DisableRename: true,
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.LootTablePath.Get()
+			},
+			Transform: func(s string) string {
+				s = strings.TrimPrefix(s, "loot_tables/")
+				s = strings.TrimSuffix(s, ".json")
+				return s
+			},
+		},
+		mcfunction.TagMusicId: {
+			Kind:    References,
+			Binding: workspace.MusicDefinitionId,
+		},
+		mcfunction.TagProvidedFogId: {
+			Kind:    Definition,
+			Binding: workspace.ProvidedFogId,
+			// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return nil
+			},
+			ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.ProvidedFogId.Definition.Get()
+			},
+		},
+		mcfunction.TagRecipeId: {
+			Kind:    References,
+			Binding: workspace.RecipeId,
+		},
+		mcfunction.TagSoundId: {
+			Kind:    References,
+			Binding: workspace.SoundDefinitionId,
+		},
+		mcfunction.TagStructureFile: {
+			DisableRename: true,
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.StructurePath.Get()
+			},
+		},
+		mcfunction.TagTagId: {
+			Kind:    Definition,
+			Binding: workspace.Tag,
+			// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return nil
+			},
+			ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.Tag.Definition.Get()
+			},
+		},
+		mcfunction.TagTickingAreaId: {
+			Kind:    Definition,
+			Binding: workspace.TickingArea,
+			// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return nil
+			},
+			ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.TickingArea.Definition.Get()
+			},
+		},
+		mcfunction.TagTypeFamilyId: {
+			Kind:    References,
+			Binding: workspace.EntityFamily,
+		},
+		mcfunction.TagScoreboardObjectiveId: {
+			Kind:    Definition,
+			Binding: workspace.ScoreboardObjective,
+			// ReferencesOverride already returns Binding.Definition; the default would duplicate rename edits
+			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
+				return nil
+			},
+			ReferencesOverride: func(node mcfunction.Node) []core.Symbol {
+				return workspace.ScoreboardObjective.Definition.Get()
+			},
+		},
+	}
+}
+
+func newRawMessage(workspace *core.Workspace, h *CommandHandler) *JsonRawMessageHandler {
+	return &JsonRawMessageHandler{
+		CommandHandler: h,
+		JsonSnippetHandler: &JsonSnippetHandler{
+			JsonHandler: &JsonHandler{
+				Workspace: workspace,
+				Entries: []JsonEntry{
+					{
+						Kind:    References,
+						Binding: workspace.Lang,
+						Path:    []core.JsonPath{core.JsonValue("rawtext/**/translate")},
 					},
-					References: func(ctx *JsonContext) []core.Symbol {
-						return stores.Lang.References.Get()
+					{
+						Kind:    Definition,
+						Binding: workspace.ScoreboardObjective,
+						Path:    []core.JsonPath{core.JsonValue("rawtext/**/score/objective")},
+						DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+							return nil
+						},
+						ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+							return workspace.ScoreboardObjective.Definition.Get()
+						},
+					},
+				},
+			},
+			SnippetEntries: []SnippetEntry{
+				{
+					Path: []core.JsonPath{core.JsonValue("**/rawtext/*")},
+					Snippets: []Snippet{
+						{
+							Label: "Text",
+							Value: `{"text":"$0"}`,
+						},
+						{
+							Label: "Score",
+							Value: `{"score":{"name":"$0","objective":"$1"}}`,
+						},
+						{
+							Label: "Translate",
+							Value: `{"translate":"$0"}`,
+						},
+						{
+							Label: "Translate with",
+							Value: `{"translate":"$1","with":{"rawtext":[$0]}}`,
+						},
 					},
 				},
 				{
-					Store: stores.ScoreboardObjective.Source,
-					Path:  []shared.JsonPath{shared.JsonValue("rawtext/**/score/objective")},
-					Source: func(ctx *JsonContext) []core.Symbol {
-						return stores.ScoreboardObjective.Source.Get()
+					Path: []core.JsonPath{core.JsonKey("**/rawtext/**")},
+					Snippets: []Snippet{
+						{
+							Label: "With",
+							Value: `"with":{"rawtext":[$0]}`,
+						},
 					},
-					References: func(ctx *JsonContext) []core.Symbol {
-						return nil
+				},
+				{
+					Path: []core.JsonPath{core.JsonValue("**/rawtext/**/with/*")},
+					Snippets: []Snippet{
+						{
+							Label: "Rawtext",
+							Value: `{"rawtext":[$0]}`,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func newItemNbt(workspace *core.Workspace) *JsonSnippetHandler {
+	return &JsonSnippetHandler{
+		JsonHandler: &JsonHandler{
+			Workspace: workspace,
+			Entries: []JsonEntry{
+				{
+					Kind:    References,
+					Binding: workspace.ItemId,
+					Path: []core.JsonPath{
+						core.JsonValue("minecraft:can_place_on/blocks/*"),
+						core.JsonValue("minecraft:can_destroy/blocks/*"),
+					},
+					ScopeKey: func(ctx *JsonContext) string {
+						return "block"
+					},
+					DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+						return workspace.ItemId.Definition.Get("block")
+					},
+					ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+						return workspace.ItemId.References.Get("block")
 					},
 				},
 			},
 		},
 		SnippetEntries: []SnippetEntry{
 			{
-				Path: []shared.JsonPath{shared.JsonValue("**/rawtext/*")},
+				Path: []core.JsonPath{core.JsonKey("*")},
 				Snippets: []Snippet{
 					{
-						Label: "Text",
-						Value: `{"text":"$0"}`,
+						Label: "Can place on",
+						Value: `"minecraft:can_place_on":{"blocks":[$0]}`,
 					},
 					{
-						Label: "Score",
-						Value: `{"score":{"name":"$0","objective":"$1"}}`,
+						Label: "Can destroy",
+						Value: `"minecraft:can_destroy":{"blocks":[$0]}`,
 					},
 					{
-						Label: "Translate",
-						Value: `{"translate":"$0"}`,
+						Label: "Keep on death",
+						Value: `"minecraft:keep_on_death":{}`,
 					},
 					{
-						Label: "Translate with",
-						Value: `{"translate":"$1","with":{"rawtext":[$0]}}`,
+						Label: "Lock in inventory",
+						Value: `"minecraft:item_lock":{"mode":"lock_in_inventory"}"`,
 					},
-				},
-			},
-			{
-				Path: []shared.JsonPath{shared.JsonKey("**/rawtext/**")},
-				Snippets: []Snippet{
 					{
-						Label: "With",
-						Value: `"with":{"rawtext":[$0]}`,
-					},
-				},
-			},
-			{
-				Path: []shared.JsonPath{shared.JsonValue("**/rawtext/**/with/*")},
-				Snippets: []Snippet{
-					{
-						Label: "Rawtext",
-						Value: `{"rawtext":[$0]}`,
+						Label: "Lock in slot",
+						Value: `"minecraft:item_lock":{"mode":"lock_in_slot"}"`,
 					},
 				},
 			},
 		},
-	},
-}
-
-var itemNbt = &JsonSnippetHandler{
-	JsonHandler: &JsonHandler{
-		Entries: []JsonEntry{
-			{
-				Store: stores.ItemId.References,
-				Path: []shared.JsonPath{
-					shared.JsonValue("minecraft:can_place_on/blocks/*"),
-					shared.JsonValue("minecraft:can_destroy/blocks/*"),
-				},
-				ScopeKey: func(ctx *JsonContext) string {
-					return "block"
-				},
-				Source: func(ctx *JsonContext) []core.Symbol {
-					return stores.ItemId.Source.Get("block")
-				},
-				References: func(ctx *JsonContext) []core.Symbol {
-					return stores.ItemId.References.Get("block")
-				},
-			},
-		},
-	},
-	SnippetEntries: []SnippetEntry{
-		{
-			Path: []shared.JsonPath{shared.JsonKey("*")},
-			Snippets: []Snippet{
-				{
-					Label: "Can place on",
-					Value: `"minecraft:can_place_on":{"blocks":[$0]}`,
-				},
-				{
-					Label: "Can destroy",
-					Value: `"minecraft:can_destroy":{"blocks":[$0]}`,
-				},
-				{
-					Label: "Keep on death",
-					Value: `"minecraft:keep_on_death":{}`,
-				},
-				{
-					Label: "Lock in inventory",
-					Value: `"minecraft:item_lock":{"mode":"lock_in_inventory"}"`,
-				},
-				{
-					Label: "Lock in slot",
-					Value: `"minecraft:item_lock":{"mode":"lock_in_slot"}"`,
-				},
-			},
-		},
-	},
+	}
 }

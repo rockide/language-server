@@ -3,12 +3,11 @@ package server
 import (
 	"log"
 
-	"github.com/rockide/language-server/handlers"
-	"github.com/rockide/language-server/internal/protocol"
+	"go.lsp.dev/uri"
 )
 
-func onCreate(uri protocol.DocumentURI) {
-	handler := handlers.Find(uri)
+func (s *Server) onCreate(uri uri.URI) {
+	handler := s.findHandler(uri)
 	if handler == nil {
 		return
 	}
@@ -18,8 +17,8 @@ func onCreate(uri protocol.DocumentURI) {
 	}
 }
 
-func onChange(uri protocol.DocumentURI) {
-	handler := handlers.Find(uri)
+func (s *Server) onChange(uri uri.URI) {
+	handler := s.findHandler(uri)
 	if handler == nil {
 		return
 	}
@@ -30,8 +29,8 @@ func onChange(uri protocol.DocumentURI) {
 	}
 }
 
-func onDelete(uri protocol.DocumentURI) {
-	handler := handlers.Find(uri)
+func (s *Server) onDelete(uri uri.URI) {
+	handler := s.findHandler(uri)
 	if handler == nil {
 		return
 	}

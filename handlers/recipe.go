@@ -2,83 +2,64 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var Recipe = &JsonHandler{
-	Pattern: shared.RecipeGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.RecipeId.Source,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:recipe_shaped/description/identifier"),
-				shared.JsonValue("minecraft:recipe_shapeless/description/identifier"),
+func Recipe(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/recipes/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:    Definition,
+				Binding: workspace.RecipeId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:recipe_shaped/description/identifier"),
+					core.JsonValue("minecraft:recipe_shapeless/description/identifier"),
+				},
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.RecipeId.References.Get()
+			{
+				Kind:    References,
+				Binding: workspace.ItemId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:recipe_furnace/input"),
+					core.JsonValue("minecraft:recipe_furnace/output"),
+					core.JsonValue("minecraft:recipe_shaped/result/item"),
+					core.JsonValue("minecraft:recipe_shaped/key/*/item"),
+					core.JsonValue("minecraft:recipe_shaped/unlock/*/item"),
+					core.JsonValue("minecraft:recipe_shapeless/result/item"),
+					core.JsonValue("minecraft:recipe_shapeless/ingredients/*/item"),
+					core.JsonValue("minecraft:recipe_shapeless/unlock/*/item"),
+					core.JsonValue("minecraft:recipe_brewing_mix/input"),
+					core.JsonValue("minecraft:recipe_brewing_mix/reagent"),
+					core.JsonValue("minecraft:recipe_brewing_mix/output"),
+					core.JsonValue("minecraft:recipe_brewing_container/input"),
+					core.JsonValue("minecraft:recipe_brewing_container/reagent"),
+					core.JsonValue("minecraft:recipe_brewing_container/output"),
+				},
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.RecipeId.Source.Get()
+			{
+				Kind:    References,
+				Binding: workspace.RecipeTag,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:recipe_shaped/tags/*"),
+					core.JsonValue("minecraft:recipe_shapeless/tags/*"),
+					core.JsonValue("minecraft:recipe_furnace/tags"),
+					core.JsonValue("minecraft:recipe_brewing_container/tags"),
+					core.JsonValue("minecraft:recipe_brewing_container_mix/tags"),
+					core.JsonValue("minecraft:recipe_smithing_transform/tags"),
+					core.JsonValue("minecraft:recipe_smithing_trim/tags"),
+				},
 			},
-		},
-		{
-			Store: stores.ItemId.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:recipe_furnace/input"),
-				shared.JsonValue("minecraft:recipe_furnace/output"),
-				shared.JsonValue("minecraft:recipe_shaped/result/item"),
-				shared.JsonValue("minecraft:recipe_shaped/key/*/item"),
-				shared.JsonValue("minecraft:recipe_shaped/unlock/*/item"),
-				shared.JsonValue("minecraft:recipe_shapeless/result/item"),
-				shared.JsonValue("minecraft:recipe_shapeless/ingredients/*/item"),
-				shared.JsonValue("minecraft:recipe_shapeless/unlock/*/item"),
-				shared.JsonValue("minecraft:recipe_brewing_mix/input"),
-				shared.JsonValue("minecraft:recipe_brewing_mix/reagent"),
-				shared.JsonValue("minecraft:recipe_brewing_mix/output"),
-				shared.JsonValue("minecraft:recipe_brewing_container/input"),
-				shared.JsonValue("minecraft:recipe_brewing_container/reagent"),
-				shared.JsonValue("minecraft:recipe_brewing_container/output"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemId.References.Get()
-			},
-		},
-		{
-			Store: stores.RecipeTag.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:recipe_shaped/tags/*"),
-				shared.JsonValue("minecraft:recipe_shapeless/tags/*"),
-				shared.JsonValue("minecraft:recipe_furnace/tags"),
-				shared.JsonValue("minecraft:recipe_brewing_container/tags"),
-				shared.JsonValue("minecraft:recipe_brewing_container_mix/tags"),
-				shared.JsonValue("minecraft:recipe_smithing_transform/tags"),
-				shared.JsonValue("minecraft:recipe_smithing_trim/tags"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.RecipeTag.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.RecipeTag.References.Get()
+			{
+				Kind:    References,
+				Binding: workspace.ItemTag,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:recipe_shaped/key/*/tag"),
+					core.JsonValue("minecraft:recipe_shaped/unlock/*/tag"),
+					core.JsonValue("minecraft:recipe_shapeless/ingredients/*/tag"),
+					core.JsonValue("minecraft:recipe_shapeless/unlock/*/tag"),
+				},
 			},
 		},
-		{
-			Store: stores.ItemTag.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:recipe_shaped/key/*/tag"),
-				shared.JsonValue("minecraft:recipe_shaped/unlock/*/tag"),
-				shared.JsonValue("minecraft:recipe_shapeless/ingredients/*/tag"),
-				shared.JsonValue("minecraft:recipe_shapeless/unlock/*/tag"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTag.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.ItemTag.References.Get()
-			},
-		},
-	},
+	}
 }

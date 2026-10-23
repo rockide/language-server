@@ -6,122 +6,122 @@ import (
 
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var Geometry = &JsonHandler{
-	Pattern: shared.GeometryGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.GeometryId.Source,
-			Path: []shared.JsonPath{
-				shared.JsonKey("*"),
-				shared.JsonValue("minecraft:geometry/*/description/identifier"),
+func Geometry(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/models/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:    Definition,
+				Binding: workspace.GeometryId,
+				Path: []core.JsonPath{
+					core.JsonKey("*"),
+					core.JsonValue("minecraft:geometry/*/description/identifier"),
+				},
+				Matcher: func(ctx *JsonContext) bool {
+					return strings.HasPrefix(ctx.NodeValue, "geometry.")
+				},
+				Transform: func(value string) string {
+					res, _, _ := strings.Cut(value, ":")
+					return res
+				},
+				FilterDiff: true,
 			},
-			Matcher: func(ctx *JsonContext) bool {
-				return strings.HasPrefix(ctx.NodeValue, "geometry.")
+			{
+				Kind:       Definition,
+				Binding:    workspace.GeometryBone,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:geometry/*/bones/*/name")},
+				FilterDiff: true,
+				ScopeKey:   _geometryGetIdentifier,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetIdentifier(ctx)
+					return workspace.GeometryBone.Definition.Get(identifier)
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetIdentifier(ctx)
+					return workspace.GeometryBone.References.Get(identifier)
+				},
 			},
-			Transform: func(value string) string {
-				res, _, _ := strings.Cut(value, ":")
-				return res
+			{
+				// FIXME: Prevent circular references
+				Kind:     References,
+				Binding:  workspace.GeometryBone,
+				Path:     []core.JsonPath{core.JsonValue("minecraft:geometry/*/bones/*/parent")},
+				ScopeKey: _geometryGetIdentifier,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetIdentifier(ctx)
+					// Prevent self-reference
+					parent := ctx.GetParentNode()
+					name := jsonc.FindNodeAtLocation(parent, jsonc.Path{"name"})
+					result := workspace.GeometryBone.Definition.Get(identifier)
+					if name != nil {
+						return slices.DeleteFunc(result, func(symbol core.Symbol) bool {
+							return symbol.Value == name.Value
+						})
+					}
+					return result
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetIdentifier(ctx)
+					return workspace.GeometryBone.References.Get(identifier)
+				},
 			},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.GeometryId.References.Get()
+			// Older version of geometry files
+			{
+				Kind:    Definition,
+				Binding: workspace.GeometryBone,
+				Path:    []core.JsonPath{core.JsonValue("*/bones/*/name")},
+				Matcher: func(ctx *JsonContext) bool {
+					return _geometryGetOldIdentifier(ctx) != defaultScope
+				},
+				FilterDiff: true,
+				ScopeKey:   _geometryGetOldIdentifier,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetOldIdentifier(ctx)
+					return workspace.GeometryBone.Definition.Get(identifier)
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetOldIdentifier(ctx)
+					return workspace.GeometryBone.References.Get(identifier)
+				},
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.GeometryId.Source.Get()
+			{
+				// FIXME: Prevent circular references
+				Kind:    References,
+				Binding: workspace.GeometryBone,
+				Path:    []core.JsonPath{core.JsonValue("*/bones/*/parent")},
+				Matcher: func(ctx *JsonContext) bool {
+					return _geometryGetOldIdentifier(ctx) != defaultScope
+				},
+				ScopeKey: _geometryGetOldIdentifier,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetOldIdentifier(ctx)
+					// Prevent self-reference
+					parent := ctx.GetParentNode()
+					name := jsonc.FindNodeAtLocation(parent, jsonc.Path{"name"})
+					result := workspace.GeometryBone.Definition.Get(identifier)
+					if name != nil {
+						return slices.DeleteFunc(result, func(symbol core.Symbol) bool {
+							return symbol.Value == name.Value
+						})
+					}
+					return result
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					identifier := _geometryGetOldIdentifier(ctx)
+					return workspace.GeometryBone.References.Get(identifier)
+				},
 			},
 		},
-		{
-			Store:      stores.GeometryBone.Source,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/name")},
-			FilterDiff: true,
-			ScopeKey:   _geometryGetIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetIdentifier(ctx)
-				return stores.GeometryBone.References.Get(identifier)
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetIdentifier(ctx)
-				return stores.GeometryBone.Source.Get(identifier)
-			},
+		MolangLocations: []core.JsonPath{
+			core.JsonValue("minecraft:geometry/*/bones/*/binding"),
 		},
-		{
-			// FIXME: Prevent circular references
-			Store:    stores.GeometryBone.References,
-			Path:     []shared.JsonPath{shared.JsonValue("minecraft:geometry/*/bones/*/parent")},
-			ScopeKey: _geometryGetIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetIdentifier(ctx)
-				// Prevent self-reference
-				parent := ctx.GetParentNode()
-				name := jsonc.FindNodeAtLocation(parent, jsonc.Path{"name"})
-				result := stores.GeometryBone.Source.Get(identifier)
-				if name != nil {
-					return slices.DeleteFunc(result, func(symbol core.Symbol) bool {
-						return symbol.Value == name.Value
-					})
-				}
-				return result
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetIdentifier(ctx)
-				return stores.GeometryBone.References.Get(identifier)
-			},
+		MolangSemanticLocations: []core.JsonPath{
+			core.JsonValue("minecraft:geometry/*/description/identifier"),
 		},
-		// Older version of geometry files
-		{
-			Store: stores.GeometryBone.Source,
-			Path:  []shared.JsonPath{shared.JsonValue("*/bones/*/name")},
-			Matcher: func(ctx *JsonContext) bool {
-				return _geometryGetOldIdentifier(ctx) != defaultScope
-			},
-			FilterDiff: true,
-			ScopeKey:   _geometryGetOldIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetOldIdentifier(ctx)
-				return stores.GeometryBone.References.Get(identifier)
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetOldIdentifier(ctx)
-				return stores.GeometryBone.Source.Get(identifier)
-			},
-		},
-		{
-			// FIXME: Prevent circular references
-			Store: stores.GeometryBone.References,
-			Path:  []shared.JsonPath{shared.JsonValue("*/bones/*/parent")},
-			Matcher: func(ctx *JsonContext) bool {
-				return _geometryGetOldIdentifier(ctx) != defaultScope
-			},
-			ScopeKey: _geometryGetOldIdentifier,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetOldIdentifier(ctx)
-				// Prevent self-reference
-				parent := ctx.GetParentNode()
-				name := jsonc.FindNodeAtLocation(parent, jsonc.Path{"name"})
-				result := stores.GeometryBone.Source.Get(identifier)
-				if name != nil {
-					return slices.DeleteFunc(result, func(symbol core.Symbol) bool {
-						return symbol.Value == name.Value
-					})
-				}
-				return result
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				identifier := _geometryGetOldIdentifier(ctx)
-				return stores.GeometryBone.References.Get(identifier)
-			},
-		},
-	},
-	MolangLocations: []shared.JsonPath{
-		shared.JsonValue("minecraft:geometry/*/bones/*/binding"),
-	},
-	MolangSemanticLocations: []shared.JsonPath{
-		shared.JsonValue("minecraft:geometry/*/description/identifier"),
-	},
+	}
 }
 
 func _geometryGetIdentifier(ctx *JsonContext) string {

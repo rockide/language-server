@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/internal/jsonc"
-	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/language-server/internal/textdocument"
+	"go.lsp.dev/protocol"
 )
 
 type JsonRawMessageHandler struct {
@@ -27,13 +27,11 @@ func (j *JsonRawMessageHandler) Completions(document *textdocument.TextDocument,
 			value := `"@` + selector + `"`
 			result = append(result, protocol.CompletionItem{
 				Label: value,
-				TextEdit: &protocol.Or_CompletionItem_textEdit{
-					Value: protocol.TextEdit{
-						NewText: value,
-						Range: protocol.Range{
-							Start: document.PositionAt(node.Offset),
-							End:   document.PositionAt(node.Offset + node.Length),
-						},
+				TextEdit: &protocol.TextEdit{
+					NewText: value,
+					Range: protocol.Range{
+						Start: document.PositionAt(node.Offset),
+						End:   document.PositionAt(node.Offset + node.Length),
 					},
 				},
 			})

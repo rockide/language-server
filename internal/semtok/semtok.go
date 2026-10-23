@@ -5,17 +5,20 @@
 // The semtok package provides an encoder for LSP's semantic tokens.
 package semtok
 
-import "sort"
+import (
+	"cmp"
+	"slices"
+)
 
 // A Token provides the extent and semantics of a token.
 type Token struct {
-	Line, Start uint32
-	Len         uint32
+	Line, Start uint32 // 0-based UTF-16 index
+	Len         uint32 // in UTF-16 codes
 	Type        Type
 	Modifiers   []Modifier
 }
 
-type Type string
+type Type = string
 
 const (
 	// These are the tokens defined by LSP 3.18, but a client is
@@ -32,6 +35,7 @@ const (
 	TokNumber     Type = "number"        // for a numeric literal
 	TokOperator   Type = "operator"      // for an operator
 	TokParameter  Type = "parameter"     // for a parameter variable
+	TokProperty   Type = "property"      // for a struct field
 	TokString     Type = "string"        // for a string literal
 	TokType       Type = "type"          // for a type name (plus other uses)
 	TokTypeParam  Type = "typeParameter" // for a type parameter
@@ -41,15 +45,17 @@ const (
 	//
 	// If you move types to above, document it in
 	// gopls/doc/features/passive.md#semantic-tokens.
-	// TokClass      TokenType = "class"
-	// TokDecorator  TokenType = "decorator"
-	// TokEnum       TokenType = "enum"
-	// TokEvent      TokenType = "event"
-	// TokInterface  TokenType = "interface"
-	// TokModifier   TokenType = "modifier"
-	// TokProperty   TokenType = "property"
-	// TokRegexp     TokenType = "regexp"
-	// TokStruct     TokenType = "struct"
+	//
+	// Sync any changes below with the vscode-go custom token type list.
+	// See: extension/src/language/goSemanticTokens.ts
+	// TokClass      Type = "class"
+	// TokDecorator  Type = "decorator"
+	// TokEnum       Type = "enum"
+	// TokEvent      Type = "event"
+	// TokInterface  Type = "interface"
+	// TokModifier   Type = "modifier"
+	// TokRegexp     Type = "regexp"
+	// TokStruct     Type = "struct"
 	// Minecraft Lang color types
 	TokColorDefault             Type = "colorDefault"
 	TokColorGreen               Type = "colorGreen"
@@ -82,13 +88,14 @@ const (
 	TokColorBlue                Type = "colorBlue"
 )
 
-// TokenTypes is a slice of types gopls will return as its server capabilities.
-var TokenTypes = []Type{
+// Types is a slice of types gopls will return as its server capabilities.
+var Types = []Type{
 	TokNamespace,
 	TokEnumMember,
 	TokType,
 	TokTypeParam,
 	TokParameter,
+	TokProperty,
 	TokVariable,
 	TokFunction,
 	TokMethod,
@@ -131,17 +138,18 @@ var TokenTypes = []Type{
 	TokColorBlue,
 }
 
-type Modifier string
+type Modifier = string
 
 const (
 	// LSP 3.18 standard modifiers
-	// As with TokenTypes, clients get only the modifiers they request.
+	// As with Types, clients get only the modifiers they request.
 	//
 	// The section below defines a subset of modifiers in standard modifiers
 	// that gopls understand.
 	ModDefaultLibrary Modifier = "defaultLibrary" // for predeclared symbols
 	ModDefinition     Modifier = "definition"     // for the declaring identifier of a symbol
 	ModReadonly       Modifier = "readonly"       // for constants (TokVariable)
+	ModStatic         Modifier = "static"         // for package-level variables
 	// The section below defines the rest of the modifiers in standard modifiers
 	// that gopls does not use.
 	//
@@ -153,13 +161,15 @@ const (
 	// ModDeprecated    Modifier = "deprecated"
 	// ModDocumentation Modifier = "documentation"
 	// ModModification  Modifier = "modification"
-	// ModStatic        Modifier = "static"
 
 	// non-standard modifiers
 	//
 	// Since the type of a symbol is orthogonal to its kind,
 	// (e.g. a variable can have function type),
 	// we use modifiers for the top-level type constructor.
+	//
+	// Sync any changes below with the vscode-go custom token modifier list.
+	// See: extension/src/language/goSemanticTokens.ts
 	ModArray     Modifier = "array"
 	ModBool      Modifier = "bool"
 	ModChan      Modifier = "chan"
@@ -172,19 +182,20 @@ const (
 	ModSlice     Modifier = "slice"
 	ModString    Modifier = "string"
 	ModStruct    Modifier = "struct"
+	ModShadowing Modifier = "shadowing" // shadowing definition
 	// Minecraft Lang formatting codes
 	ModObfuscated Modifier = "obfuscated"
 	ModBold       Modifier = "bold"
 	ModItalic     Modifier = "italic"
 )
 
-// TokenModifiers is a slice of modifiers gopls will return as its server
-// capabilities.
-var TokenModifiers = []Modifier{
+// Modifiers is a slice of modifiers gopls will return as its server capabilities.
+var Modifiers = []Modifier{
 	// LSP 3.18 standard modifiers.
 	ModDefinition,
 	ModReadonly,
 	ModDefaultLibrary,
+	ModStatic,
 	// Additional custom modifiers.
 	ModArray,
 	ModBool,
@@ -198,6 +209,7 @@ var TokenModifiers = []Modifier{
 	ModSlice,
 	ModString,
 	ModStruct,
+	ModShadowing,
 	// Minecraft Lang formatting codes
 	ModObfuscated,
 	ModBold,
@@ -206,67 +218,58 @@ var TokenModifiers = []Modifier{
 
 // Encode returns the LSP encoding of a sequence of tokens.
 // encodeType and encodeModifier maps control which types and modifiers are
-// excluded in the response. If a type or modifier maps to false, it will be
-// omitted from the output.
+// included in the response. A type or modifier must exist in the map and map
+// to true to be included in the output.
 func Encode(
 	tokens []Token,
 	encodeType map[Type]bool,
 	encodeModifier map[Modifier]bool,
 ) []uint32 {
-	// binary operators, at least, will be out of order
-	sort.Slice(tokens, func(i, j int) bool {
-		if tokens[i].Line != tokens[j].Line {
-			return tokens[i].Line < tokens[j].Line
+	// Binary operators, at least, will be out of order.
+	slices.SortFunc(tokens, func(x, y Token) int {
+		if d := cmp.Compare(x.Line, y.Line); d != 0 {
+			return d
 		}
-		return tokens[i].Start < tokens[j].Start
+		return cmp.Compare(x.Start, y.Start)
 	})
 
-	typeMap := make(map[Type]int)
-	for i, t := range TokenTypes {
-		if enable, ok := encodeType[t]; ok && !enable {
-			continue
+	typeMap := make(map[Type]uint32)
+	for i, t := range Types {
+		if enable, ok := encodeType[t]; ok && enable {
+			typeMap[Type(t)] = uint32(i)
 		}
-		typeMap[Type(t)] = i
 	}
 
-	modMap := make(map[Modifier]int)
-	for i, m := range TokenModifiers {
-		if enable, ok := encodeModifier[m]; ok && !enable {
-			continue
+	modMap := make(map[Modifier]uint32)
+	for i, m := range Modifiers {
+		if enable, ok := encodeModifier[m]; ok && enable {
+			modMap[Modifier(m)] = 1 << i
 		}
-		modMap[Modifier(m)] = 1 << i
 	}
 
-	// each semantic token needs five values but some tokens might be skipped.
-	// (see Integer Encoding for Tokens in the LSP spec)
-	x := make([]uint32, 5*len(tokens))
-	var j int
-	var last Token
-	for i := range tokens {
-		item := tokens[i]
-		typ, ok := typeMap[item.Type]
+	// Each semantic token needs five values but some tokens might be skipped.
+	// See "Integer Encoding for Tokens":
+	// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_semanticTokens
+	code := make([]uint32, 0, 5*len(tokens))
+	var prev Token // Line=Start=0
+	for _, token := range tokens {
+		tokenType, ok := typeMap[token.Type]
 		if !ok {
-			continue // client doesn't want semantic token info.
+			continue // client explicitly disabled this type
 		}
-		if j == 0 {
-			x[0] = tokens[0].Line
-		} else {
-			x[j] = item.Line - last.Line
+		var (
+			deltaLine      = token.Line - prev.Line
+			deltaStart     = token.Start - prev.Start // same line: delta encoding of start
+			tokenModifiers uint32
+		)
+		if deltaLine > 0 {
+			deltaStart = token.Start // new line: absolute encoding of start
 		}
-		x[j+1] = item.Start
-		if j > 0 && x[j] == 0 {
-			x[j+1] = item.Start - last.Start
+		for _, s := range token.Modifiers {
+			tokenModifiers |= modMap[s] // zero if client explicitly disabled this modifier
 		}
-		x[j+2] = item.Len
-		x[j+3] = uint32(typ)
-		mask := 0
-		for _, s := range item.Modifiers {
-			// modMap[s] is 0 if the client doesn't want this modifier
-			mask |= modMap[s]
-		}
-		x[j+4] = uint32(mask)
-		j += 5
-		last = item
+		code = append(code, deltaLine, deltaStart, token.Len, tokenType, tokenModifiers)
+		prev = token
 	}
-	return x[:j]
+	return code
 }

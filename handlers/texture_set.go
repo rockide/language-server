@@ -5,43 +5,46 @@ import (
 	"strings"
 
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/internal/pathutil"
 )
 
-var TextureSet = &JsonHandler{
-	Pattern:   shared.TextureSetGlob,
-	PathStore: stores.TexturePath,
-	Entries: []JsonEntry{
-		{
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:texture_set/color"),
-				shared.JsonValue("minecraft:texture_set/normal"),
-				shared.JsonValue("minecraft:texture_set/heightmap"),
-				shared.JsonValue("minecraft:texture_set/metalness_emissive_roughness"),
-				shared.JsonValue("minecraft:texture_set/metalness_emissive_roughness_subsurface"),
-			},
-			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				textures := stores.TexturePath.Get()
-				var result []core.Symbol
-				for _, texture := range textures {
-					if ctx.URI.Dir().Encloses(texture.URI) && !strings.HasSuffix(texture.URI.Path(), ".json") {
-						relativePath, err := filepath.Rel(ctx.URI.DirPath(), texture.URI.Path())
-						if err != nil {
-							continue
+func TextureSet(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/textures/**/*.texture_set.json"),
+		PathStore: workspace.TexturePath,
+		Entries: []JsonEntry{
+			{
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:texture_set/color"),
+					core.JsonValue("minecraft:texture_set/normal"),
+					core.JsonValue("minecraft:texture_set/heightmap"),
+					core.JsonValue("minecraft:texture_set/metalness_emissive_roughness"),
+					core.JsonValue("minecraft:texture_set/metalness_emissive_roughness_subsurface"),
+				},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					textures := workspace.TexturePath.Get()
+					dir := filepath.Dir(ctx.URI.FsPath())
+					var result []core.Symbol
+					for _, texture := range textures {
+						if pathutil.InDir(dir, texture.URI.FsPath()) && !strings.HasSuffix(texture.URI.FsPath(), ".json") {
+							relativePath, err := filepath.Rel(dir, texture.URI.FsPath())
+							if err != nil {
+								continue
+							}
+							relativePath = filepath.ToSlash(relativePath)
+							ext := filepath.Ext(relativePath)
+							texture.Value = strings.TrimSuffix(relativePath, ext)
+							result = append(result, texture)
 						}
-						relativePath = filepath.ToSlash(relativePath)
-						ext := filepath.Ext(relativePath)
-						texture.Value = strings.TrimSuffix(relativePath, ext)
-						result = append(result, texture)
 					}
-				}
-				return result
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
+					return result
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
 			},
 		},
-	},
+	}
 }

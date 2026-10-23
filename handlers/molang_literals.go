@@ -1,8 +1,6 @@
 package handlers
 
-import (
-	"github.com/rockide/language-server/stores"
-)
+import "github.com/rockide/language-server/core"
 
 var equipmentSlots = [...]string{
 	"slot.weapon.mainhand",
@@ -26,48 +24,48 @@ var graphicsModes = [...]string{"simple", "fancy", "deferred", "raytraced"}
 var inputModes = [...]string{"keyboard_and_mouse", "touch", "gamepad", "motion_controller"}
 
 type molangValue struct {
-	bindings []*stores.SymbolBinding
+	bindings []*core.SymbolBinding
 	literals []string
 }
 
-var molangTypes = map[string]func() molangValue{
-	"EquipmentSlot": func() molangValue {
+var molangTypes = map[string]func(workspace *core.Workspace) molangValue{
+	"EquipmentSlot": func(workspace *core.Workspace) molangValue {
 		return molangValue{literals: equipmentSlots[:]}
 	},
-	"GraphicsMode": func() molangValue {
+	"GraphicsMode": func(workspace *core.Workspace) molangValue {
 		return molangValue{literals: graphicsModes[:]}
 	},
-	"InputMode": func() molangValue {
+	"InputMode": func(workspace *core.Workspace) molangValue {
 		return molangValue{literals: inputModes[:]}
 	},
-	"BiomeId": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.BiomeId}}
+	"BiomeId": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.BiomeId}}
 	},
-	"BiomeTag": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.BiomeTag}}
+	"BiomeTag": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.BiomeTag}}
 	},
-	"BlockTag": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.BlockTag}}
+	"BlockTag": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.BlockTag}}
 	},
-	"BlockAndItemTag": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.BlockTag, stores.ItemTag}}
+	"BlockAndItemTag": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.BlockTag, workspace.ItemTag}}
 	},
-	"BlockState": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.BlockState}}
+	"BlockState": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.BlockState}}
 	},
-	"EntityIdentifier": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.EntityId}}
+	"EntityIdentifier": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.EntityId}}
 	},
-	"EntityProperty": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.EntityProperty}}
+	"EntityProperty": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.EntityProperty}}
 	},
-	"TypeFamily": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.EntityFamily}}
+	"TypeFamily": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.EntityFamily}}
 	},
-	"ItemIdentifier": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.ItemId}}
+	"ItemIdentifier": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.ItemId}}
 	},
-	"ItemTag": func() molangValue {
-		return molangValue{bindings: []*stores.SymbolBinding{stores.ItemTag}}
+	"ItemTag": func(workspace *core.Workspace) molangValue {
+		return molangValue{bindings: []*core.SymbolBinding{workspace.ItemTag}}
 	},
 }

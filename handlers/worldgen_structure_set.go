@@ -2,22 +2,18 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var WorldgenStructureSet = &JsonHandler{
-	Pattern: shared.WorldgenStructureSetGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.WorldgenJigsawId.References,
-			Path:  []shared.JsonPath{shared.JsonValue("minecraft:structure_set/structures/*/structure")},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenJigsawId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.WorldgenJigsawId.References.Get()
+func WorldgenStructureSet(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/worldgen/structure_sets/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:    References,
+				Binding: workspace.WorldgenJigsawId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:structure_set/structures/*/structure")},
 			},
 		},
-	},
+	}
 }

@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
-	"github.com/rockide/language-server/internal/protocol"
 	"github.com/rockide/language-server/internal/textdocument"
-	"github.com/rockide/language-server/shared"
+	"go.lsp.dev/protocol"
 )
 
 type JsonSnippetHandler struct {
@@ -13,7 +13,7 @@ type JsonSnippetHandler struct {
 }
 
 type SnippetEntry struct {
-	Path     []shared.JsonPath
+	Path     []core.JsonPath
 	Snippets []Snippet
 }
 
@@ -21,8 +21,6 @@ type Snippet struct {
 	Label string
 	Value string
 }
-
-var snippetTextFormat = protocol.SnippetTextFormat
 
 func (j *JsonSnippetHandler) prepareSnippet(location *jsonc.Location) *SnippetEntry {
 	for _, entry := range j.SnippetEntries {
@@ -49,9 +47,9 @@ func (j *JsonSnippetHandler) Completions(document *textdocument.TextDocument, po
 	for _, snippet := range snippetEntry.Snippets {
 		result = append(result, protocol.CompletionItem{
 			Label:            snippet.Label,
-			Kind:             protocol.SnippetCompletion,
-			InsertTextFormat: &snippetTextFormat,
-			InsertText:       snippet.Value,
+			Kind:             protocol.CompletionItemKindSnippet,
+			InsertTextFormat: protocol.InsertTextFormatSnippet,
+			InsertText:       protocol.NewOptional(snippet.Value),
 		})
 	}
 	return result

@@ -1,6 +1,6 @@
 package lang
 
-import "github.com/rockide/language-server/internal/protocol"
+import "go.lsp.dev/protocol"
 
 type NodeKind uint8
 

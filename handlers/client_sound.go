@@ -2,51 +2,42 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var ClientSound = &JsonHandler{
-	Pattern: shared.ClientSoundGlob,
-	Entries: []JsonEntry{
-		{
-			Store: stores.SoundDefinitionId.References,
-			Path: []shared.JsonPath{
-				shared.JsonValue("block_sounds/*/events/*"),
-				shared.JsonValue("block_sounds/*/events/*/sound"),
-				shared.JsonValue("entity_sounds/entities/*/events/*"),
-				shared.JsonValue("entity_sounds/entities/*/events/*/sound"),
-				shared.JsonValue("entity_sounds/entities/*/variants/map/*/events/*"),
-				shared.JsonValue("entity_sounds/entities/*/variants/map/*/events/*/sound"),
-				shared.JsonValue("individual_event_sounds/events/*"),
-				shared.JsonValue("individual_event_sounds/events/*/sound"),
-				shared.JsonValue("individual_named_sounds/sounds/*"),
-				shared.JsonValue("individual_named_sounds/sounds/*/sound"),
-				shared.JsonValue("interactive_sounds/*/*/events/*"),
-				shared.JsonValue("interactive_sounds/*/*/events/*/sound"),
+func ClientSound(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/sounds.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:    References,
+				Binding: workspace.SoundDefinitionId,
+				Path: []core.JsonPath{
+					core.JsonValue("block_sounds/*/events/*"),
+					core.JsonValue("block_sounds/*/events/*/sound"),
+					core.JsonValue("entity_sounds/entities/*/events/*"),
+					core.JsonValue("entity_sounds/entities/*/events/*/sound"),
+					core.JsonValue("entity_sounds/entities/*/variants/map/*/events/*"),
+					core.JsonValue("entity_sounds/entities/*/variants/map/*/events/*/sound"),
+					core.JsonValue("individual_event_sounds/events/*"),
+					core.JsonValue("individual_event_sounds/events/*/sound"),
+					core.JsonValue("individual_named_sounds/sounds/*"),
+					core.JsonValue("individual_named_sounds/sounds/*/sound"),
+					core.JsonValue("interactive_sounds/*/*/events/*"),
+					core.JsonValue("interactive_sounds/*/*/events/*/sound"),
+				},
 			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.SoundDefinitionId.References.Get()
-			},
-		},
-		{
-			Store: stores.EntityId.References,
-			Path: []shared.JsonPath{
-				shared.JsonKey("entity_sounds/entities/*"),
-				shared.JsonKey("interactive_sounds/entity_sounds/entities/*"),
-			},
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.Source.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.EntityId.References.Get()
+			{
+				Kind:    References,
+				Binding: workspace.EntityId,
+				Path: []core.JsonPath{
+					core.JsonKey("entity_sounds/entities/*"),
+					core.JsonKey("interactive_sounds/entity_sounds/entities/*"),
+				},
 			},
 		},
-	},
-	MolangLocations: []shared.JsonPath{
-		shared.JsonValue("entity_sounds/entities/*/variants/key"),
-	},
+		MolangLocations: []core.JsonPath{
+			core.JsonValue("entity_sounds/entities/*/variants/key"),
+		},
+	}
 }

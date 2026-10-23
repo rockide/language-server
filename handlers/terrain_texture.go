@@ -2,40 +2,36 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var TerrainTexture = &JsonHandler{
-	Pattern: shared.TerrainTextureGlob,
-	Entries: []JsonEntry{
-		{
-			Store:      stores.TerrainTextureId.Source,
-			Path:       []shared.JsonPath{shared.JsonKey("texture_data/*")},
-			FilterDiff: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTextureId.References.Get()
+func TerrainTexture(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/textures/terrain_texture.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.TerrainTextureId,
+				Path:       []core.JsonPath{core.JsonKey("texture_data/*")},
+				FilterDiff: true,
 			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return stores.TerrainTextureId.Source.Get()
-			},
-		},
-		{
-			Path: []shared.JsonPath{
-				shared.JsonValue("texture_data/*/textures"),
-				shared.JsonValue("texture_data/*/textures/path"),
-				shared.JsonValue("texture_data/*/textures/variations/*/path"),
-				shared.JsonValue("texture_data/*/textures/*"),
-				shared.JsonValue("texture_data/*/textures/*/path"),
-				shared.JsonValue("texture_data/*/textures/*/variations/*/path"),
-			},
-			DisableRename: true,
-			Source: func(ctx *JsonContext) []core.Symbol {
-				return stores.TexturePath.Get()
-			},
-			References: func(ctx *JsonContext) []core.Symbol {
-				return nil
+			{
+				Path: []core.JsonPath{
+					core.JsonValue("texture_data/*/textures"),
+					core.JsonValue("texture_data/*/textures/path"),
+					core.JsonValue("texture_data/*/textures/variations/*/path"),
+					core.JsonValue("texture_data/*/textures/*"),
+					core.JsonValue("texture_data/*/textures/*/path"),
+					core.JsonValue("texture_data/*/textures/*/variations/*/path"),
+				},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.TexturePath.Get()
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
 			},
 		},
-	},
+	}
 }

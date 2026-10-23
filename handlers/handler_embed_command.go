@@ -1,23 +1,26 @@
 package handlers
 
-import "github.com/rockide/language-server/internal/mcfunction"
+import (
+	"github.com/rockide/language-server/core"
+	"github.com/rockide/language-server/internal/mcfunction"
+)
 
-var EmbedCommand = &CommandHandler{
-	Parser: newCommandParser(mcfunction.ParserOptions{
+func EmbedCommand(workspace *core.Workspace) *CommandHandler {
+	return newCommandHandler(workspace, "", newCommandParser(mcfunction.ParserOptions{
 		EscapeQuotes: true,
-	}),
+	}))
 }
 
-var EmbedDialogueCommand = &CommandHandler{
-	Parser: newCommandParser(mcfunction.ParserOptions{
+func EmbedDialogueCommand(workspace *core.Workspace) *CommandHandler {
+	return newCommandHandler(workspace, "", newCommandParser(mcfunction.ParserOptions{
 		EscapeQuotes:      true,
 		InitiatorSelector: true,
-	}),
+	}))
 }
 
-var EmbedEventCommand = &CommandHandler{
-	Parser: newCommandParser(mcfunction.ParserOptions{
+func EmbedEventCommand(workspace *core.Workspace) *CommandHandler {
+	return newCommandHandler(workspace, "", newCommandParser(mcfunction.ParserOptions{
 		EscapeQuotes: true,
 		EventAlias:   true,
-	}),
+	}))
 }

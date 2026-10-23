@@ -1,22 +1,23 @@
 package handlers
 
 import (
+	"path/filepath"
+
 	"github.com/bmatcuk/doublestar/v4"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/internal/protocol"
-	"github.com/rockide/language-server/shared"
+	"go.lsp.dev/protocol"
 )
 
-func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core.Symbol {
-	s, ok := pattern.ToString()
+func difference(workspace *core.Workspace, pattern core.Pattern, a []core.Symbol, b []core.Symbol) []core.Symbol {
+	s, ok := pattern.Resolve(workspace)
 	if !ok {
 		return nil
 	}
 	res := []core.Symbol{}
 	set := mapset.NewThreadUnsafeSet[string]()
 	for _, ref := range b {
-		if doublestar.MatchUnvalidated("**/"+s, string(ref.URI)) {
+		if doublestar.MatchUnvalidated("**/"+s, filepath.ToSlash(ref.URI.FsPath())) {
 			set.Add(ref.Value)
 		}
 	}
@@ -29,5 +30,9 @@ func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core
 }
 
 func isInside(r protocol.Range, p protocol.Position) bool {
-	return protocol.ComparePosition(p, r.Start) != -1 && protocol.ComparePosition(p, r.End) != 1
+	return !isBefore(p, r.Start) && !isBefore(r.End, p)
+}
+
+func isBefore(a, b protocol.Position) bool {
+	return a.Line < b.Line || (a.Line == b.Line && a.Character < b.Character)
 }
