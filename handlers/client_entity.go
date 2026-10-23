@@ -3,147 +3,148 @@ package handlers
 import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var ClientEntity = &JsonHandler{
-	Pattern: shared.ClientEntityGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:       References,
-			Binding:    stores.EntityId,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/identifier")},
-			FilterDiff: true,
-		},
-		{
-			Kind:       Definition,
-			Binding:    stores.ClientAnimationAlias,
-			Path:       []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/animations/*")},
-			FilterDiff: true,
-			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
+func ClientEntity(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/entity/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       References,
+				Binding:    workspace.EntityId,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:client_entity/description/identifier")},
+				FilterDiff: true,
 			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
-				set := mapset.NewThreadUnsafeSet[string]()
-				for _, symbol := range stores.ClientAnimationId.References.GetFrom(ctx.URI) {
-					if !set.ContainsOne(symbol.Value) {
-						set.Add(symbol.Value)
-						res = append(res, stores.ClientAnimationAlias.References.Get(symbol.Value)...)
+			{
+				Kind:       Definition,
+				Binding:    workspace.ClientAnimationAlias,
+				Path:       []core.JsonPath{core.JsonKey("minecraft:client_entity/description/animations/*")},
+				FilterDiff: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					res := workspace.ClientAnimationAlias.References.GetFrom(ctx.URI)
+					set := mapset.NewThreadUnsafeSet[string]()
+					for _, symbol := range workspace.ClientAnimationId.References.GetFrom(ctx.URI) {
+						if !set.ContainsOne(symbol.Value) {
+							set.Add(symbol.Value)
+							res = append(res, workspace.ClientAnimationAlias.References.Get(symbol.Value)...)
+						}
 					}
-				}
-				return res
+					return res
+				},
 			},
-		},
-		{
-			Kind:    References,
-			Binding: stores.ClientAnimationAlias,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:client_entity/description/scripts/animate/*"),
-				shared.JsonKey("minecraft:client_entity/description/scripts/animate/*/*"),
-			},
-			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
-			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				res := stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
-				set := mapset.NewThreadUnsafeSet[string]()
-				for _, symbol := range stores.ClientAnimationId.References.GetFrom(ctx.URI) {
-					if !set.ContainsOne(symbol.Value) {
-						set.Add(symbol.Value)
-						res = append(res, stores.ClientAnimationAlias.References.Get(symbol.Value)...)
+			{
+				Kind:    References,
+				Binding: workspace.ClientAnimationAlias,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:client_entity/description/scripts/animate/*"),
+					core.JsonKey("minecraft:client_entity/description/scripts/animate/*/*"),
+				},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					res := workspace.ClientAnimationAlias.References.GetFrom(ctx.URI)
+					set := mapset.NewThreadUnsafeSet[string]()
+					for _, symbol := range workspace.ClientAnimationId.References.GetFrom(ctx.URI) {
+						if !set.ContainsOne(symbol.Value) {
+							set.Add(symbol.Value)
+							res = append(res, workspace.ClientAnimationAlias.References.Get(symbol.Value)...)
+						}
 					}
-				}
-				return res
+					return res
+				},
+			},
+			{
+				Kind:    References,
+				Binding: workspace.ClientAnimationId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:client_entity/description/animations/*")},
+				ScopeKey: func(ctx *JsonContext) string {
+					return ctx.NodeValue
+				},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:client_entity/description/materials/*")},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.EntityMaterial,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:client_entity/description/materials/*")},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:client_entity/description/textures/*")},
+			},
+			{
+				Path:          []core.JsonPath{core.JsonValue("minecraft:client_entity/description/textures/*")},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.TexturePath.Get()
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:client_entity/description/geometry/*")},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.GeometryId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:client_entity/description/geometry/*")},
+			},
+			{
+				Kind:    References,
+				Binding: workspace.RenderControllerId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:client_entity/description/render_controllers/*"),
+					core.JsonKey("minecraft:client_entity/description/render_controllers/*/*"),
+				},
+			},
+			{
+				Kind:    References,
+				Binding: workspace.ItemTextureId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:client_entity/description/spawn_egg/texture")},
+			},
+			{
+				Path: []core.JsonPath{
+					core.JsonKey("minecraft:client_entity/description/particle_effects/*"),
+					core.JsonKey("minecraft:client_entity/description/particle_emitters/*"),
+				},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.ParticleId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:client_entity/description/particle_effects/*"),
+					core.JsonValue("minecraft:client_entity/description/particle_emitters/*"),
+				},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:client_entity/description/sound_effects/*")},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.SoundDefinitionId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:client_entity/description/sound_effects/*")},
 			},
 		},
-		{
-			Kind:    References,
-			Binding: stores.ClientAnimationId,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/animations/*")},
-			ScopeKey: func(ctx *JsonContext) string {
-				return ctx.NodeValue
-			},
+		MolangLocations: []core.JsonPath{
+			core.JsonValue("minecraft:client_entity/description/scripts/animate/*/*"),
+			core.JsonValue("minecraft:client_entity/description/scripts/initialize/*"),
+			core.JsonValue("minecraft:client_entity/description/scripts/parent_setup"),
+			core.JsonValue("minecraft:client_entity/description/scripts/pre_animation/*"),
+			core.JsonValue("minecraft:client_entity/description/scripts/scale"),
+			core.JsonValue("minecraft:client_entity/description/render_controllers/*/*"),
 		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/materials/*")},
-			// TODO
+		MolangSemanticLocations: []core.JsonPath{
+			core.JsonValue("minecraft:client_entity/description/geometry/*"),
 		},
-		{
-			Kind:    References,
-			Binding: stores.EntityMaterial,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/materials/*")},
-		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/textures/*")},
-		},
-		{
-			Path:          []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/textures/*")},
-			DisableRename: true,
-			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.TexturePath.Get()
-			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
-			},
-		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/geometry/*")},
-			// TODO
-		},
-		{
-			Kind:    References,
-			Binding: stores.GeometryId,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/geometry/*")},
-		},
-		{
-			Kind:    References,
-			Binding: stores.RenderControllerId,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:client_entity/description/render_controllers/*"),
-				shared.JsonKey("minecraft:client_entity/description/render_controllers/*/*"),
-			},
-		},
-		{
-			Kind:    References,
-			Binding: stores.ItemTextureId,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/spawn_egg/texture")},
-		},
-		{
-			Path: []shared.JsonPath{
-				shared.JsonKey("minecraft:client_entity/description/particle_effects/*"),
-				shared.JsonKey("minecraft:client_entity/description/particle_emitters/*"),
-			},
-			// TODO
-		},
-		{
-			Kind:    References,
-			Binding: stores.ParticleId,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:client_entity/description/particle_effects/*"),
-				shared.JsonValue("minecraft:client_entity/description/particle_emitters/*"),
-			},
-		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:client_entity/description/sound_effects/*")},
-			// TODO
-		},
-		{
-			Kind:    References,
-			Binding: stores.SoundDefinitionId,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:client_entity/description/sound_effects/*")},
-		},
-	},
-	MolangLocations: []shared.JsonPath{
-		shared.JsonValue("minecraft:client_entity/description/scripts/animate/*/*"),
-		shared.JsonValue("minecraft:client_entity/description/scripts/initialize/*"),
-		shared.JsonValue("minecraft:client_entity/description/scripts/parent_setup"),
-		shared.JsonValue("minecraft:client_entity/description/scripts/pre_animation/*"),
-		shared.JsonValue("minecraft:client_entity/description/scripts/scale"),
-		shared.JsonValue("minecraft:client_entity/description/render_controllers/*/*"),
-	},
-	MolangSemanticLocations: []shared.JsonPath{
-		shared.JsonValue("minecraft:client_entity/description/geometry/*"),
-	},
+	}
 }

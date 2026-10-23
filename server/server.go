@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"io/fs"
 	"log"
 	"os"
@@ -13,71 +12,112 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/handlers"
+	"github.com/rockide/language-server/internal/debouncer"
+	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
-type InitializationOptions struct {
-	ProjectPaths *struct {
-		BehaviorPack string `json:"behaviorPack,omitzero"`
-		ResourcePack string `json:"resourcePack,omitzero"`
-	} `json:"projectPaths,omitempty"`
+type Server struct {
+	protocol.UnimplementedServer
+
+	version   string
+	workspace *core.Workspace
+	handlers  []handlers.Handler
+	debouncer *debouncer.Debouncer[uri.URI]
 }
 
-func findProjectPaths(options *InitializationOptions) (*core.Project, error) {
-	// try to get project paths from user settings
-	if options != nil && options.ProjectPaths != nil {
-		paths := options.ProjectPaths
-		if paths.BehaviorPack != "" || paths.ResourcePack != "" {
-			return core.NewProject(paths.BehaviorPack, paths.ResourcePack), nil
+func New(version string) *Server {
+	workspace := core.NewWorkspace()
+
+	handlers := []handlers.Handler{
+		// BP
+		handlers.AimAssistPreset(workspace),
+		handlers.AimAssistCategory(workspace),
+		handlers.Animation(workspace),
+		handlers.AnimationController(workspace),
+		handlers.Biome(workspace),
+		handlers.Block(workspace),
+		handlers.Camera(workspace),
+		handlers.CraftingItemCatalog(workspace),
+		handlers.Dialogue(workspace),
+		handlers.Entity(workspace),
+		handlers.Feature(workspace),
+		handlers.FeatureRule(workspace),
+		handlers.Item(workspace),
+		handlers.Lang(workspace),
+		handlers.LootTable(workspace),
+		handlers.McFunction(workspace),
+		handlers.Recipe(workspace),
+		handlers.SpawnRule(workspace),
+		handlers.Structure(workspace),
+		handlers.TradeTable(workspace),
+		handlers.WorldgenProcessor(workspace),
+		handlers.WorldgenTemplatePool(workspace),
+		handlers.WorldgenJigsaw(workspace),
+		handlers.WorldgenStructureSet(workspace),
+
+		// RP
+		handlers.Attachable(workspace),
+		handlers.Atmosphere(workspace),
+		handlers.BlockCulling(workspace),
+		handlers.ClientAnimation(workspace),
+		handlers.ClientAnimationController(workspace),
+		handlers.ClientBiome(workspace),
+		handlers.ClientBlock(workspace),
+		handlers.ClientEntity(workspace),
+		handlers.ClientLang(workspace),
+		handlers.ClientSound(workspace),
+		handlers.ColorGrading(workspace),
+		handlers.EntityMaterial(workspace),
+		handlers.Fog(workspace),
+		handlers.FlipbookTexture(workspace),
+		handlers.Geometry(workspace),
+		handlers.ItemTexture(workspace),
+		handlers.Lighting(workspace),
+		handlers.LocalLighting(workspace),
+		handlers.MusicDefintion(workspace),
+		handlers.Particle(workspace),
+		handlers.ParticleMaterial(workspace),
+		handlers.RenderController(workspace),
+		handlers.Sound(workspace),
+		handlers.SoundDefinition(workspace),
+		handlers.TerrainTexture(workspace),
+		handlers.Texture(workspace),
+		handlers.TextureSet(workspace),
+		handlers.Water(workspace),
+	}
+
+	return &Server{
+		version:   version,
+		workspace: workspace,
+		handlers:  handlers,
+		debouncer: debouncer.NewDebouncer[uri.URI](300 * time.Millisecond),
+	}
+}
+
+func (s *Server) findHandler(uri uri.URI) handlers.Handler {
+	path := filepath.ToSlash(uri.FsPath())
+	for _, handler := range s.handlers {
+		pattern, ok := handler.GetPattern().Resolve(s.workspace)
+		if ok && doublestar.MatchUnvalidated("**/"+pattern, path) {
+			return handler
 		}
 	}
-
-	// if not found, search the current dir and the 'packs' dir
-	dir := "."
-	if stat, err := os.Stat("packs"); err == nil && stat.IsDir() {
-		dir = "packs"
-	}
-	fsys := os.DirFS(dir)
-
-	var bp string
-	bpPaths, err := doublestar.Glob(fsys, "{behavior_pack,*BP,BP_*,*bp,bp_*}", doublestar.WithFailOnIOErrors())
-	if err != nil {
-		return nil, err
-	}
-	if len(bpPaths) > 0 {
-		bp = dir + "/" + bpPaths[0]
-		log.Printf("Behavior pack: %s", bp)
-	}
-
-	var rp string
-	rpPaths, err := doublestar.Glob(fsys, "{resource_pack,*RP,RP_*,*rp,rp_*}", doublestar.WithFailOnIOErrors())
-	if err != nil {
-		return nil, err
-	}
-	if len(rpPaths) > 0 {
-		rp = dir + "/" + rpPaths[0]
-		log.Printf("Resource pack: %s", rp)
-	}
-
-	if bp == "" && rp == "" {
-		return nil, errors.New("not a minecraft project")
-	}
-
-	return core.NewProject(bp, rp), nil
+	return nil
 }
 
-func indexWorkspace() {
+func (s *Server) indexWorkspace() {
 	startTime := time.Now()
 	fsys := os.DirFS(".")
 	totalFiles := atomic.Uint32{}
 	skippedFiles := atomic.Uint32{}
 
 	var wg sync.WaitGroup
-	wg.Add(len(handlers.GetAll()))
-	for _, store := range handlers.GetAll() {
+	wg.Add(len(s.handlers))
+	for _, store := range s.handlers {
 		go func() {
 			defer wg.Done()
-			pattern, ok := store.GetPattern().ToString()
+			pattern, ok := store.GetPattern().Resolve(s.workspace)
 			if !ok {
 				return
 			}

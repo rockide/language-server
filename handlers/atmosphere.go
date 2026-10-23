@@ -1,18 +1,20 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var Atmosphere = &JsonHandler{
-	Pattern: shared.AtmosphereGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:       Definition,
-			Binding:    stores.AtmosphereId,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:atmosphere_settings/description/identifier")},
-			FilterDiff: true,
+func Atmosphere(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/atmospherics/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.AtmosphereId,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:atmosphere_settings/description/identifier")},
+				FilterDiff: true,
+			},
 		},
-	},
+	}
 }

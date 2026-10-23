@@ -6,12 +6,11 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
 	"go.lsp.dev/protocol"
 )
 
-func difference(pattern shared.Pattern, a []core.Symbol, b []core.Symbol) []core.Symbol {
-	s, ok := pattern.ToString()
+func difference(workspace *core.Workspace, pattern core.Pattern, a []core.Symbol, b []core.Symbol) []core.Symbol {
+	s, ok := pattern.Resolve(workspace)
 	if !ok {
 		return nil
 	}

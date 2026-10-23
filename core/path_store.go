@@ -1,4 +1,4 @@
-package stores
+package core
 
 import (
 	"path/filepath"
@@ -7,14 +7,11 @@ import (
 	"sync"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/vanilla"
 	"go.lsp.dev/uri"
 )
 
 type PathStore struct {
-	store        []core.Symbol
+	store        []Symbol
 	trimSuffixes []string
 	mu           sync.RWMutex
 	VanillaData  mapset.Set[string]
@@ -24,12 +21,12 @@ func NewPathStore(vanillaData mapset.Set[string], trimSuffixes ...string) *PathS
 	return &PathStore{trimSuffixes: trimSuffixes, VanillaData: vanillaData}
 }
 
-func (s *PathStore) Insert(pattern shared.Pattern, uri uri.URI) {
-	packDir, ok := pattern.PackDir()
+func (s *PathStore) Insert(workspace *Workspace, pattern Pattern, uri uri.URI) {
+	packDir, ok := pattern.PackDir(workspace)
 	if !ok {
 		return
 	}
-	path, err := filepath.Rel(shared.Getwd(), uri.FsPath())
+	path, err := filepath.Rel(workspace.RootDir, uri.FsPath())
 	if err != nil {
 		panic(err)
 	}
@@ -47,10 +44,10 @@ func (s *PathStore) Insert(pattern shared.Pattern, uri uri.URI) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.store = append(s.store, core.Symbol{Value: path, URI: uri})
+	s.store = append(s.store, Symbol{Value: path, URI: uri})
 }
 
-func (s *PathStore) Get() []core.Symbol {
+func (s *PathStore) Get() []Symbol {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return slices.Clone(s.store)
@@ -59,16 +56,7 @@ func (s *PathStore) Get() []core.Symbol {
 func (s *PathStore) Delete(uri uri.URI) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.store = slices.DeleteFunc(s.store, func(symbol core.Symbol) bool {
+	s.store = slices.DeleteFunc(s.store, func(symbol Symbol) bool {
 		return symbol.URI == uri
 	})
 }
-
-var (
-	LootTablePath  = NewPathStore(vanilla.LootTable)
-	McFunctionPath = NewPathStore(nil, ".mcfunction")
-	StructurePath  = NewPathStore(nil, ".mcstructure")
-	TradeTablePath = NewPathStore(vanilla.TradeTable)
-	SoundPath      = NewPathStore(vanilla.SoundPath, ".fsb", ".ogg", ".wav")
-	TexturePath    = NewPathStore(vanilla.TexturePath, ".png", ".tga", ".jpg", ".jpeg", ".texture_set.json")
-)

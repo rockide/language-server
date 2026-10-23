@@ -1,18 +1,20 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var Water = &JsonHandler{
-	Pattern: shared.WaterGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:       Definition,
-			Binding:    stores.WaterId,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:water_settings/description/identifier")},
-			FilterDiff: true,
+func Water(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/water/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.WaterId,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:water_settings/description/identifier")},
+				FilterDiff: true,
+			},
 		},
-	},
+	}
 }

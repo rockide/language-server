@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var Sound = &Path{
-	Pattern: shared.SoundGlob,
-	Store:   stores.SoundPath,
+func Sound(workspace *core.Workspace) *PathHandler {
+	return &PathHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/sounds/**/*.{fsb,ogg,wav}"),
+		Store:     workspace.SoundPath,
+	}
 }

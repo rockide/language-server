@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/molang"
 	"github.com/rockide/language-server/internal/semtok"
 	"github.com/rockide/language-server/internal/sliceutil"
@@ -13,7 +14,9 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-type MolangHandler struct{}
+type MolangHandler struct {
+	Workspace *core.Workspace
+}
 
 func (m *MolangHandler) Completions(document *textdocument.TextDocument, position protocol.Position) []protocol.CompletionItem {
 	parser, err := molang.NewParser(document.GetText())
@@ -61,7 +64,7 @@ func (m *MolangHandler) Completions(document *textdocument.TextDocument, positio
 			log.Printf("Unknown param tokenType: %s", param.Type)
 			return nil
 		}
-		values := getTypeValues()
+		values := getTypeValues(m.Workspace)
 		editRange := protocol.Range{
 			// Exclude surrounding single quotes
 			Start: document.PositionAt(token.Offset + 1),
@@ -191,7 +194,7 @@ func (m *MolangHandler) Definitions(document *textdocument.TextDocument, positio
 		return nil
 	}
 	res := []protocol.LocationLink{}
-	values := getTypeValues()
+	values := getTypeValues(m.Workspace)
 	if values.bindings == nil {
 		return nil
 	}
@@ -251,7 +254,7 @@ func (m *MolangHandler) References(document *textdocument.TextDocument, position
 		return nil
 	}
 	res := []protocol.Location{}
-	values := getTypeValues()
+	values := getTypeValues(m.Workspace)
 	if values.bindings == nil {
 		return nil
 	}
@@ -390,5 +393,3 @@ func (m *MolangHandler) SemanticTokens(document *textdocument.TextDocument) *pro
 		Data: semtok.Encode(tokens, tokenType, tokenModifier),
 	}
 }
-
-var Molang = &MolangHandler{}

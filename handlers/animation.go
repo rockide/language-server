@@ -4,36 +4,37 @@ import (
 	"strings"
 
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var Animation = &JsonHandler{
-	Pattern: shared.AnimationGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:       Definition,
-			Binding:    stores.AnimationId,
-			Path:       []shared.JsonPath{shared.JsonKey("animations/*")},
-			FilterDiff: true,
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				filtered := []core.Symbol{}
-				for _, ref := range stores.AnimationId.References.Get() {
-					if strings.HasPrefix(ref.Value, "animation.") {
-						filtered = append(filtered, ref)
+func Animation(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/animations/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.AnimationId,
+				Path:       []core.JsonPath{core.JsonKey("animations/*")},
+				FilterDiff: true,
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					filtered := []core.Symbol{}
+					for _, ref := range workspace.AnimationId.References.Get() {
+						if strings.HasPrefix(ref.Value, "animation.") {
+							filtered = append(filtered, ref)
+						}
 					}
-				}
-				return filtered
+					return filtered
+				},
 			},
 		},
-	},
-	MolangLocations: []shared.JsonPath{
-		shared.JsonValue("animations/*/anim_time_update"),
-		shared.JsonValue("animations/*/timeline/*/*"),
-	},
-	CommandEntry: JsonCommandEntry{
-		Handler:   EmbedEventCommand,
-		SlashMode: SlashAlways,
-		Path:      []shared.JsonPath{shared.JsonValue("animations/*/timeline/*/*")},
-	},
+		MolangLocations: []core.JsonPath{
+			core.JsonValue("animations/*/anim_time_update"),
+			core.JsonValue("animations/*/timeline/*/*"),
+		},
+		CommandEntry: JsonCommandEntry{
+			Handler:   EmbedEventCommand(workspace),
+			SlashMode: SlashAlways,
+			Path:      []core.JsonPath{core.JsonValue("animations/*/timeline/*/*")},
+		},
+	}
 }

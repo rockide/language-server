@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var Structure = &Path{
-	Pattern: shared.StructureGlob,
-	Store:   stores.StructurePath,
+func Structure(workspace *core.Workspace) *PathHandler {
+	return &PathHandler{
+		Workspace: workspace,
+		Pattern:   core.BehaviorPattern("/structures/**/*.mcstructure"),
+		Store:     workspace.StructurePath,
+	}
 }

@@ -1,23 +1,25 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var MusicDefintion = &JsonHandler{
-	Pattern: shared.MusicDefinitionGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:       Definition,
-			Binding:    stores.MusicDefinitionId,
-			Path:       []shared.JsonPath{shared.JsonKey("*")},
-			FilterDiff: true,
+func MusicDefintion(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/sounds/music_definitions.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.MusicDefinitionId,
+				Path:       []core.JsonPath{core.JsonKey("*")},
+				FilterDiff: true,
+			},
+			{
+				Kind:    References,
+				Binding: workspace.SoundDefinitionId,
+				Path:    []core.JsonPath{core.JsonValue("*/event_name")},
+			},
 		},
-		{
-			Kind:    References,
-			Binding: stores.SoundDefinitionId,
-			Path:    []shared.JsonPath{shared.JsonValue("*/event_name")},
-		},
-	},
+	}
 }

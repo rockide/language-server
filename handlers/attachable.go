@@ -2,127 +2,128 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 )
 
-var Attachable = &JsonHandler{
-	Pattern: shared.AttachableGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:       References,
-			Binding:    stores.ItemId,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/identifier")},
-			FilterDiff: true,
-		},
-		{
-			Kind:       Definition,
-			Binding:    stores.ClientAnimationAlias,
-			Path:       []shared.JsonPath{shared.JsonKey("minecraft:attachable/description/animations/*")},
-			FilterDiff: true,
-			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
+func Attachable(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/attachables/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       References,
+				Binding:    workspace.ItemId,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:attachable/description/identifier")},
+				FilterDiff: true,
 			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
+			{
+				Kind:       Definition,
+				Binding:    workspace.ClientAnimationAlias,
+				Path:       []core.JsonPath{core.JsonKey("minecraft:attachable/description/animations/*")},
+				FilterDiff: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ClientAnimationAlias.References.GetFrom(ctx.URI)
+				},
+			},
+			{
+				Kind:    References,
+				Binding: workspace.ClientAnimationAlias,
+				Path: []core.JsonPath{
+					core.JsonKey("minecraft:attachable/description/scripts/animate/*/*"),
+					core.JsonValue("minecraft:attachable/description/scripts/animate/*"),
+				},
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.ClientAnimationAlias.References.GetFrom(ctx.URI)
+				},
+			},
+			{
+				Kind:    References,
+				Binding: workspace.ClientAnimationId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:attachable/description/animations/*")},
+				ScopeKey: func(ctx *JsonContext) string {
+					return ctx.NodeValue
+				},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:attachable/description/materials/*")},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.EntityMaterial,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:attachable/description/materials/*")},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:attachable/description/textures/*")},
+				// TODO
+			},
+			{
+				Path:          []core.JsonPath{core.JsonValue("minecraft:attachable/description/textures/*")},
+				DisableRename: true,
+				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
+					return workspace.TexturePath.Get()
+				},
+				ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
+					return nil
+				},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:attachable/description/geometry/*")},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.GeometryId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:attachable/description/geometry/*")},
+			},
+			{
+				Kind:    References,
+				Binding: workspace.RenderControllerId,
+				Path: []core.JsonPath{
+					core.JsonKey("minecraft:attachable/description/render_controllers/*/*"),
+					core.JsonValue("minecraft:attachable/description/render_controllers/*"),
+				},
+			},
+			{
+				Path: []core.JsonPath{
+					core.JsonKey("minecraft:attachable/description/particle_effects/*"),
+					core.JsonKey("minecraft:attachable/description/particle_emitters/*"),
+				},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.ParticleId,
+				Path: []core.JsonPath{
+					core.JsonValue("minecraft:attachable/description/particle_effects/*"),
+					core.JsonValue("minecraft:attachable/description/particle_emitters/*"),
+				},
+			},
+			{
+				Path: []core.JsonPath{core.JsonKey("minecraft:attachable/description/sound_effects/*")},
+				// TODO
+			},
+			{
+				Kind:    References,
+				Binding: workspace.SoundDefinitionId,
+				Path:    []core.JsonPath{core.JsonValue("minecraft:attachable/description/sound_effects/*")},
 			},
 		},
-		{
-			Kind:    References,
-			Binding: stores.ClientAnimationAlias,
-			Path: []shared.JsonPath{
-				shared.JsonKey("minecraft:attachable/description/scripts/animate/*/*"),
-				shared.JsonValue("minecraft:attachable/description/scripts/animate/*"),
-			},
-			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.Definition.GetFrom(ctx.URI)
-			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.ClientAnimationAlias.References.GetFrom(ctx.URI)
-			},
+		MolangLocations: []core.JsonPath{
+			core.JsonValue("minecraft:attachable/description/scripts/animate/*/*"),
+			core.JsonValue("minecraft:attachable/description/scripts/initialize/*"),
+			core.JsonValue("minecraft:attachable/description/scripts/parent_setup"),
+			core.JsonValue("minecraft:attachable/description/scripts/pre_animation/*"),
+			core.JsonValue("minecraft:attachable/description/scripts/scale"),
+			core.JsonValue("minecraft:attachable/description/render_controllers/*/*"),
 		},
-		{
-			Kind:    References,
-			Binding: stores.ClientAnimationId,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/animations/*")},
-			ScopeKey: func(ctx *JsonContext) string {
-				return ctx.NodeValue
-			},
+		MolangSemanticLocations: []core.JsonPath{
+			core.JsonValue("minecraft:attachable/description/geometry/*"),
 		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:attachable/description/materials/*")},
-			// TODO
-		},
-		{
-			Kind:    References,
-			Binding: stores.EntityMaterial,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/materials/*")},
-		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:attachable/description/textures/*")},
-			// TODO
-		},
-		{
-			Path:          []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/textures/*")},
-			DisableRename: true,
-			DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
-				return stores.TexturePath.Get()
-			},
-			ReferencesOverride: func(ctx *JsonContext) []core.Symbol {
-				return nil
-			},
-		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:attachable/description/geometry/*")},
-			// TODO
-		},
-		{
-			Kind:    References,
-			Binding: stores.GeometryId,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/geometry/*")},
-		},
-		{
-			Kind:    References,
-			Binding: stores.RenderControllerId,
-			Path: []shared.JsonPath{
-				shared.JsonKey("minecraft:attachable/description/render_controllers/*/*"),
-				shared.JsonValue("minecraft:attachable/description/render_controllers/*"),
-			},
-		},
-		{
-			Path: []shared.JsonPath{
-				shared.JsonKey("minecraft:attachable/description/particle_effects/*"),
-				shared.JsonKey("minecraft:attachable/description/particle_emitters/*"),
-			},
-			// TODO
-		},
-		{
-			Kind:    References,
-			Binding: stores.ParticleId,
-			Path: []shared.JsonPath{
-				shared.JsonValue("minecraft:attachable/description/particle_effects/*"),
-				shared.JsonValue("minecraft:attachable/description/particle_emitters/*"),
-			},
-		},
-		{
-			Path: []shared.JsonPath{shared.JsonKey("minecraft:attachable/description/sound_effects/*")},
-			// TODO
-		},
-		{
-			Kind:    References,
-			Binding: stores.SoundDefinitionId,
-			Path:    []shared.JsonPath{shared.JsonValue("minecraft:attachable/description/sound_effects/*")},
-		},
-	},
-	MolangLocations: []shared.JsonPath{
-		shared.JsonValue("minecraft:attachable/description/scripts/animate/*/*"),
-		shared.JsonValue("minecraft:attachable/description/scripts/initialize/*"),
-		shared.JsonValue("minecraft:attachable/description/scripts/parent_setup"),
-		shared.JsonValue("minecraft:attachable/description/scripts/pre_animation/*"),
-		shared.JsonValue("minecraft:attachable/description/scripts/scale"),
-		shared.JsonValue("minecraft:attachable/description/render_controllers/*/*"),
-	},
-	MolangSemanticLocations: []shared.JsonPath{
-		shared.JsonValue("minecraft:attachable/description/geometry/*"),
-	},
+	}
 }

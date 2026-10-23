@@ -2,29 +2,28 @@ package handlers
 
 import (
 	"github.com/rockide/language-server/core"
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
 	"go.lsp.dev/uri"
 )
 
-type Path struct {
-	Pattern shared.Pattern
-	Store   *stores.PathStore
+type PathHandler struct {
+	Workspace *core.Workspace
+	Pattern   core.Pattern
+	Store     *core.PathStore
 }
 
-func (s *Path) GetPattern() shared.Pattern {
+func (s *PathHandler) GetPattern() core.Pattern {
 	return s.Pattern
 }
 
-func (s *Path) Parse(uri uri.URI) error {
-	s.Store.Insert(s.Pattern, uri)
+func (s *PathHandler) Parse(uri uri.URI) error {
+	s.Store.Insert(s.Workspace, s.Pattern, uri)
 	return nil
 }
 
-func (s *Path) GetPaths() []core.Symbol {
+func (s *PathHandler) GetPaths() []core.Symbol {
 	return s.Store.Get()
 }
 
-func (s *Path) Delete(uri uri.URI) {
+func (s *PathHandler) Delete(uri uri.URI) {
 	s.Store.Delete(uri)
 }

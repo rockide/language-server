@@ -1,9 +1,7 @@
 package textdocument
 
 import (
-	"os"
 	"slices"
-	"sync"
 
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
@@ -122,77 +120,4 @@ func (d *TextDocument) CreateVirtualDocument(ranges ...protocol.Range) *TextDocu
 		URI:     d.URI,
 		content: result,
 	}
-}
-
-var (
-	documents = make(map[uri.URI]*TextDocument)
-	mu        sync.RWMutex
-)
-
-func Get(uri uri.URI) *TextDocument {
-	mu.RLock()
-	defer mu.RUnlock()
-	return documents[uri]
-}
-
-func Open(uri uri.URI, txt string) {
-	mu.Lock()
-	defer mu.Unlock()
-	document := TextDocument{URI: uri, content: []rune(txt)}
-	documents[uri] = &document
-}
-
-func Close(uri uri.URI) {
-	mu.Lock()
-	defer mu.Unlock()
-	delete(documents, uri)
-}
-
-func SyncIncremental(uri uri.URI, contentChanges []protocol.TextDocumentContentChangeEvent) {
-	if len(contentChanges) == 0 {
-		return
-	}
-	document := Get(uri)
-	if document == nil {
-		return
-	}
-	for _, change := range contentChanges {
-		switch change := change.(type) {
-		case *protocol.TextDocumentContentChangeWholeDocument:
-			document.content = []rune(change.Text)
-		case *protocol.TextDocumentContentChangePartial:
-			startOffset := document.OffsetAt(change.Range.Start)
-			endOffset := document.OffsetAt(change.Range.End)
-			document.content = slices.Concat(document.content[:startOffset], []rune(change.Text), document.content[endOffset:])
-		}
-		document.lineOffsets = nil
-	}
-}
-
-func SyncFull(uri uri.URI, txt *string) {
-	if txt == nil {
-		return
-	}
-	document := Get(uri)
-	if document == nil || document.GetText() == *txt {
-		return
-	}
-	document.content = []rune(*txt)
-	document.lineOffsets = nil
-}
-
-func ReadFile(uri uri.URI) (*TextDocument, error) {
-	b, err := os.ReadFile(uri.FsPath())
-	if err != nil {
-		return nil, err
-	}
-	document := TextDocument{URI: uri, content: []rune(string(b))}
-	return &document, nil
-}
-
-func GetOrReadFile(uri uri.URI) (*TextDocument, error) {
-	if document := Get(uri); document != nil {
-		return document, nil
-	}
-	return ReadFile(uri)
 }

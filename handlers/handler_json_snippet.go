@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"github.com/rockide/language-server/core"
 	"github.com/rockide/language-server/internal/jsonc"
 	"github.com/rockide/language-server/internal/textdocument"
-	"github.com/rockide/language-server/shared"
 	"go.lsp.dev/protocol"
 )
 
@@ -13,7 +13,7 @@ type JsonSnippetHandler struct {
 }
 
 type SnippetEntry struct {
-	Path     []shared.JsonPath
+	Path     []core.JsonPath
 	Snippets []Snippet
 }
 

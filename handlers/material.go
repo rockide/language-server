@@ -3,40 +3,45 @@ package handlers
 import (
 	"strings"
 
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var EntityMaterial = &JsonHandler{
-	Pattern: shared.EntityMaterialGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:    Definition,
-			Binding: stores.EntityMaterial,
-			Path:    []shared.JsonPath{shared.JsonKey("materials/*")},
-			Transform: func(value string) string {
-				res, _, _ := strings.Cut(value, ":")
-				return res
+func EntityMaterial(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/materials/entity.material"),
+		Entries: []JsonEntry{
+			{
+				Kind:    Definition,
+				Binding: workspace.EntityMaterial,
+				Path:    []core.JsonPath{core.JsonKey("materials/*")},
+				Transform: func(value string) string {
+					res, _, _ := strings.Cut(value, ":")
+					return res
+				},
+				FilterDiff: true,
 			},
-			FilterDiff: true,
+			// TODO: Add base entity materials for inheritance.
 		},
-		// TODO: Add base entity materials for inheritance.
-	},
+	}
 }
 
-var ParticleMaterial = &JsonHandler{
-	Pattern: shared.ParticleMaterialGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:    Definition,
-			Binding: stores.ParticleMaterial,
-			Path:    []shared.JsonPath{shared.JsonKey("materials/*")},
-			Transform: func(value string) string {
-				res, _, _ := strings.Cut(value, ":")
-				return res
+func ParticleMaterial(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/materials/particles.material"),
+		Entries: []JsonEntry{
+			{
+				Kind:    Definition,
+				Binding: workspace.ParticleMaterial,
+				Path:    []core.JsonPath{core.JsonKey("materials/*")},
+				Transform: func(value string) string {
+					res, _, _ := strings.Cut(value, ":")
+					return res
+				},
+				FilterDiff: true,
 			},
-			FilterDiff: true,
+			// TODO: Add base particle materials for inheritance.
 		},
-		// TODO: Add base particle materials for inheritance.
-	},
+	}
 }

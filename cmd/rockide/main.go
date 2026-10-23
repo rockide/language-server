@@ -37,7 +37,7 @@ func main() {
 	conn := jsonrpc2.NewConn(jsonrpc2.NewStream(&stdio{}))
 	client := protocol.ClientDispatcher(conn)
 	ctx := protocol.WithClient(context.Background(), client)
-	handler := protocol.CancelHandler(rockideHandler(protocol.ServerHandler(&server.Server{}, jsonrpc2.MethodNotFoundHandler)))
+	handler := protocol.CancelHandler(rockideHandler(protocol.ServerHandler(server.New(version), jsonrpc2.MethodNotFoundHandler)))
 
 	conn.Go(ctx, handler)
 	<-conn.Done()

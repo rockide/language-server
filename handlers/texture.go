@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var Texture = &Path{
-	Pattern: shared.TextureGlob,
-	Store:   stores.TexturePath,
+func Texture(workspace *core.Workspace) *PathHandler {
+	return &PathHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/textures/**/*.{png,tga,jpg,jpeg}"),
+		Store:     workspace.TexturePath,
+	}
 }

@@ -1,18 +1,20 @@
 package handlers
 
 import (
-	"github.com/rockide/language-server/shared"
-	"github.com/rockide/language-server/stores"
+	"github.com/rockide/language-server/core"
 )
 
-var Fog = &JsonHandler{
-	Pattern: shared.FogGlob,
-	Entries: []JsonEntry{
-		{
-			Kind:       Definition,
-			Binding:    stores.FogId,
-			Path:       []shared.JsonPath{shared.JsonValue("minecraft:fog_settings/description/identifier")},
-			FilterDiff: true,
+func Fog(workspace *core.Workspace) *JsonHandler {
+	return &JsonHandler{
+		Workspace: workspace,
+		Pattern:   core.ResourcePattern("/fogs/**/*.json"),
+		Entries: []JsonEntry{
+			{
+				Kind:       Definition,
+				Binding:    workspace.FogId,
+				Path:       []core.JsonPath{core.JsonValue("minecraft:fog_settings/description/identifier")},
+				FilterDiff: true,
+			},
 		},
-	},
+	}
 }
