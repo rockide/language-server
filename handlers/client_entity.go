@@ -79,6 +79,7 @@ func ClientEntity(workspace *core.Workspace) *JsonHandler {
 				Path: []core.JsonPath{core.JsonKey("minecraft:client_entity/description/textures/*")},
 			},
 			{
+				Kind:          References,
 				Path:          []core.JsonPath{core.JsonValue("minecraft:client_entity/description/textures/*")},
 				DisableRename: true,
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {

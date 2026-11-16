@@ -15,6 +15,7 @@ func WorldgenProcessor(workspace *core.Workspace) *JsonHandler {
 				Path:    []core.JsonPath{core.JsonValue("minecraft:processor_list/description/identifier")},
 			},
 			{
+				Kind:          References,
 				Path:          []core.JsonPath{core.JsonValue("minecraft:processor_list/processors/**/rules/*/block_entity_modifier/loot_table")},
 				DisableRename: true,
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {

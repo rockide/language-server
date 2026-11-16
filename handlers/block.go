@@ -103,6 +103,7 @@ func Block(workspace *core.Workspace) *JsonHandler {
 				},
 			},
 			{
+				Kind: References,
 				Path: []core.JsonPath{
 					core.JsonValue("minecraft:block/components/minecraft:loot"),
 					core.JsonValue("minecraft:block/permutations/*/components/minecraft:loot"),

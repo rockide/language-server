@@ -16,6 +16,7 @@ func TerrainTexture(workspace *core.Workspace) *JsonHandler {
 				FilterDiff: true,
 			},
 			{
+				Kind: References,
 				Path: []core.JsonPath{
 					core.JsonValue("texture_data/*/textures"),
 					core.JsonValue("texture_data/*/textures/path"),

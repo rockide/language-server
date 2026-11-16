@@ -101,6 +101,7 @@ func Feature(workspace *core.Workspace) *JsonHandler {
 				},
 			},
 			{
+				Kind: References,
 				Path: []core.JsonPath{core.JsonValue("minecraft:structure_template_feature/structure_name")},
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 					return sliceutil.Map(workspace.StructurePath.Get(), func(s core.Symbol) core.Symbol {

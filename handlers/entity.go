@@ -683,6 +683,7 @@ func Entity(workspace *core.Workspace) *JsonHandler {
 				},
 			},
 			{
+				Kind: References,
 				Path: sliceutil.FlatMap([]string{
 					"minecraft:loot/table",
 					"minecraft:behavior.sneeze/loot_table",
@@ -706,6 +707,7 @@ func Entity(workspace *core.Workspace) *JsonHandler {
 				},
 			},
 			{
+				Kind: References,
 				Path: sliceutil.FlatMap([]string{
 					"minecraft:trade_table/table",
 					"minecraft:economy_trade_table/table",

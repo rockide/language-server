@@ -63,6 +63,7 @@ func Attachable(workspace *core.Workspace) *JsonHandler {
 				// TODO
 			},
 			{
+				Kind:          References,
 				Path:          []core.JsonPath{core.JsonValue("minecraft:attachable/description/textures/*")},
 				DisableRename: true,
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {

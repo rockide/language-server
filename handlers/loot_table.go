@@ -22,6 +22,7 @@ func LootTable(workspace *core.Workspace) *JsonHandler {
 				},
 			},
 			{
+				Kind: References,
 				Path: []core.JsonPath{core.JsonValue("**/entries/*/name")},
 				Matcher: func(ctx *JsonContext) bool {
 					parent := ctx.GetParentNode()

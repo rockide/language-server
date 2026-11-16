@@ -15,6 +15,7 @@ func TextureSet(workspace *core.Workspace) *JsonHandler {
 		PathStore: workspace.TexturePath,
 		Entries: []JsonEntry{
 			{
+				Kind: References,
 				Path: []core.JsonPath{
 					core.JsonValue("minecraft:texture_set/color"),
 					core.JsonValue("minecraft:texture_set/normal"),

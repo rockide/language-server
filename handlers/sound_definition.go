@@ -16,6 +16,7 @@ func SoundDefinition(workspace *core.Workspace) *JsonHandler {
 				FilterDiff: true,
 			},
 			{
+				Kind: References,
 				Path: []core.JsonPath{
 					core.JsonValue("sound_definitions/*/sounds/*"),
 					core.JsonValue("sound_definitions/*/sounds/*/name"),

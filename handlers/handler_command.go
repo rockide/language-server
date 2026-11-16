@@ -941,6 +941,7 @@ func newCommandEntries(workspace *core.Workspace) map[string]commandEntry {
 			Binding: workspace.FogId,
 		},
 		mcfunction.TagFunctionFile: {
+			Kind:          References,
 			DisableRename: true,
 			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 				return workspace.McFunctionPath.Get()
@@ -963,6 +964,7 @@ func newCommandEntries(workspace *core.Workspace) map[string]commandEntry {
 			Binding: workspace.WorldgenTemplatePoolId,
 		},
 		mcfunction.TagLootTableFile: {
+			Kind:          References,
 			DisableRename: true,
 			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 				return workspace.LootTablePath.Get()
@@ -997,6 +999,7 @@ func newCommandEntries(workspace *core.Workspace) map[string]commandEntry {
 			Binding: workspace.SoundDefinitionId,
 		},
 		mcfunction.TagStructureFile: {
+			Kind:          References,
 			DisableRename: true,
 			DefinitionOverride: func(node mcfunction.Node) []core.Symbol {
 				return workspace.StructurePath.Get()

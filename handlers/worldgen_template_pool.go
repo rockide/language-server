@@ -26,6 +26,7 @@ func WorldgenTemplatePool(workspace *core.Workspace) *JsonHandler {
 				Path:    []core.JsonPath{core.JsonValue("minecraft:template_pool/fallback")},
 			},
 			{
+				Kind: References,
 				Path: []core.JsonPath{core.JsonValue("minecraft:template_pool/elements/*/element/location")},
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
 					return sliceutil.Map(workspace.StructurePath.Get(), func(s core.Symbol) core.Symbol {

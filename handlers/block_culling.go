@@ -19,6 +19,7 @@ func BlockCulling(workspace *core.Workspace) *JsonHandler {
 				FilterDiff: true,
 			},
 			{
+				Kind:          References,
 				Path:          []core.JsonPath{core.JsonValue("minecraft:block_culling_rules/rules/*/geometry_part/bone")},
 				DisableRename: true,
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {

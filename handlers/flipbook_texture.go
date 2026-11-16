@@ -15,6 +15,7 @@ func FlipbookTexture(workspace *core.Workspace) *JsonHandler {
 				Path:    []core.JsonPath{core.JsonValue("*/atlas_tile")},
 			},
 			{
+				Kind:          References,
 				Path:          []core.JsonPath{core.JsonValue("*/flipbook_texture")},
 				DisableRename: true,
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {

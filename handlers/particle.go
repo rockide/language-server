@@ -24,6 +24,7 @@ func Particle(workspace *core.Workspace) *JsonHandler {
 				Path:    []core.JsonPath{core.JsonValue("particle_effect/events/**/particle_effect/effect")},
 			},
 			{
+				Kind:          References,
 				Path:          []core.JsonPath{core.JsonValue("particle_effect/description/basic_render_parameters/texture")},
 				DisableRename: true,
 				DefinitionOverride: func(ctx *JsonContext) []core.Symbol {
